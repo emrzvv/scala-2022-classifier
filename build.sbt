@@ -6,3 +6,5 @@ lazy val root = (project in file("."))
   .settings(
     name := "scala-2022-classifier"
   )
+
+libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.3.10"

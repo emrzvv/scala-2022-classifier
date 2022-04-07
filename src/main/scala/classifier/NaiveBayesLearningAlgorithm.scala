@@ -1,5 +1,6 @@
 package classifier
 
+import com.github.tototoshi.csv.{CSVReader, DefaultCSVFormat}
 import utils.TextEntity
 import utils.StringUtils
 
@@ -13,6 +14,8 @@ class NaiveBayesLearningAlgorithm() {
   def addExample(example: TextEntity): Unit = examples.addOne(TextEntity(example.classType, StringUtils.naiveTokenize(example.text)))
 
   def addExample(classType: String, text: String): Unit = examples.addOne(TextEntity(classType, StringUtils.naiveTokenize(text)))
+
+  def addAllExamples(textsEntities: List[TextEntity]): Unit = examples.addAll(textsEntities)
 
   def getModel: NaiveBayesModel = {
     val docsByClass = examples
@@ -32,5 +35,17 @@ class NaiveBayesLearningAlgorithm() {
       })
 
     new NaiveBayesModel(docLengths, docCount, wordCount, dictionary().size)
+  }
+
+  def addExamplesFromCsv(path: String): Unit = {
+    implicit val format: DefaultCSVFormat = new DefaultCSVFormat {
+      override val escapeChar: Char = '\"'
+      override val delimiter: Char = ';'
+    }
+
+    val reader = CSVReader.open(path)
+
+    addAllExamples(reader.all().map(col => TextEntity(col(4), col(3))))
+    // examples.foreach(println)
   }
 }
