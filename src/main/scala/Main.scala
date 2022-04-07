@@ -24,4 +24,6 @@ object Main extends App {
 
   println(resLog)
   println(resNorm)
+
+  println(classifier.pickBestClass(text))
 }

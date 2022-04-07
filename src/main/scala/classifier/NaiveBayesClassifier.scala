@@ -22,4 +22,8 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
           case (_, value) => exp(value - classified(classType))})
           .foldLeft(0.0)(_ + _)))).toMap
   }
+
+  def pickBestClass(text: String): (String, Double) = {
+    classifyNormal(text).toList.maxBy(_._2)
+  }
 }
