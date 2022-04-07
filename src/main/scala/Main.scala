@@ -3,15 +3,25 @@ import classifier.NaiveBayesClassifier
 import classifier.utils.ClassTypes
 
 object Main extends App {
-  val model: NaiveBayesLearningAlgorithm = new NaiveBayesLearningAlgorithm
-//  model.addExample(ClassTypes.negative, "предоставляю услуги бухгалтера")
-//  model.addExample(ClassTypes.negative, "спешите купить виагру")
-//  model.addExample(ClassTypes.positive, "надо купить молоко")
-//  model.addExample(ClassTypes.neutral, "а может не надо")
-//  model.addExample(ClassTypes.neutral, "а может всё-таки надо")
-  model.addExamplesFromCsv(getClass.getResource("./classifier/data/positive.csv").getPath)
-  model.addExamplesFromCsv(getClass.getResource("./classifier/data/negative.csv").getPath)
-  val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(model.getModel)
-  println(classifier.classifyLog("надо купить сигареты"))
-  println(classifier.classifyNormal("надо купить сигареты"))
+  def time[R](block: => R)(message: String): R = {
+    val t0 = System.nanoTime()
+    val result = block    // call-by-name
+    val t1 = System.nanoTime()
+    println(s"$message elapsed time: " + (t1 - t0).toDouble / 1_000_000_000.0 + "s")
+    result
+  }
+
+  val algorithm: NaiveBayesLearningAlgorithm = new NaiveBayesLearningAlgorithm
+  val posTimeAdding = time {algorithm.addExamplesFromCsv(getClass.getResource("./classifier/data/positive.csv").getPath)}("adding positive texts")
+  val negTimeAdding = time {algorithm.addExamplesFromCsv(getClass.getResource("./classifier/data/negative.csv").getPath)}("adding negative texts")
+
+  val classifier: NaiveBayesClassifier = time {new NaiveBayesClassifier(algorithm.getModel)}("creating and training model")
+
+  val text = "ура снова праздник!!!"
+
+  val resLog = time { classifier.classifyLog(text) }("calculating logs probability")
+  val resNorm = time { classifier.classifyNormal(text) }("calculating normal probability")
+
+  println(resLog)
+  println(resNorm)
 }

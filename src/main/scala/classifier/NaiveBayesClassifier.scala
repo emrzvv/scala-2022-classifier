@@ -5,6 +5,11 @@ import math.exp
 import utils.StringUtils
 
 class NaiveBayesClassifier(model: NaiveBayesModel) {
+  def calculateProbability(classType: String, text: String): Double = {
+    StringUtils.naiveTokenize(text).split(" ")
+      .map(model.wordLogProbability(classType, _)).sum + model.classLogProbability(classType)
+  }
+
   def classifyLog(text: String): Map[String, Double] = {
     model.classes.map(classType => (classType, calculateProbability(classType, text))).toMap
   }
@@ -16,10 +21,5 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
         (classType, 1.0 / (1.0 + (classified - classType).map({
           case (_, value) => exp(value - classified(classType))})
           .foldLeft(0.0)(_ + _)))).toMap
-  }
-
-  def calculateProbability(classType: String, text: String): Double = {
-    StringUtils.naiveTokenize(text).split(" ")
-      .map(model.wordLogProbability(classType, _)).sum + model.classLogProbability(classType)
   }
 }
