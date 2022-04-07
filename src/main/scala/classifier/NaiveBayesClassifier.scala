@@ -19,6 +19,7 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
   }
 
   def calculateProbability(classType: String, text: String): Double = {
-    StringUtils.naiveTokenize(text).split(" ").map(model.wordLogProbability(classType, _)).sum + model.classLogProbability(classType)
+    StringUtils.naiveTokenize(text).split(" ")
+      .map(model.wordLogProbability(classType, _)).sum + model.classLogProbability(classType)
   }
 }

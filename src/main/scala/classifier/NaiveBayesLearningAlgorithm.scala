@@ -14,7 +14,7 @@ class NaiveBayesLearningAlgorithm() {
 
   def addExample(classType: String, text: String): Unit = examples.addOne(TextEntity(classType, StringUtils.naiveTokenize(text)))
 
-  def getModel(): NaiveBayesModel = {
+  def getModel: NaiveBayesModel = {
     val docsByClass = examples
       .groupBy(_.classType)
       .map({case (key, arrayValue) => (key, arrayValue.map(_.text))})
