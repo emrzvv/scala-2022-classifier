@@ -6,13 +6,6 @@ class NaiveBayesModel(docLengths: Map[String, Int],
                       docCount: Map[String, Int],
                       wordCount: Map[String, Map[String, Int]],
                       dictionarySize: Int) {
-  // ln(docCount(class) / sum(docCount(class_i))) +
-  // + sum_{i->currentDocLength}(
-  //      ln(
-  //        (wordCount(class)(word_i) + 1) /
-  //        / (dictionarySize + docLength(class))
-  //       )
-  //      )
 
   val classes: Set[String] = docCount.keySet
 
