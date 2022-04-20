@@ -1,7 +1,9 @@
 package classifier
 
 import math.exp
-import utils.{ClassTypes, Utils}
+import utils.{ClassTypes, Term, Utils}
+
+import scala.collection.mutable.ArrayBuffer
 
 class NaiveBayesClassifier(model: NaiveBayesModel) {
   def calculateProbability(classType: String, text: String): Double = {
@@ -18,7 +20,8 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
     model.classes
       .map(classType =>
         (classType, 1.0 / (1.0 + (classified - classType).map({
-          case (_, value) => exp(value - classified(classType))})
+          case (_, value) => exp(value - classified(classType))
+        })
           .foldLeft(0.0)(_ + _)))).toMap
   }
 
@@ -29,5 +32,14 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
   def pickBestClass(text: String): String = {
     val result: (String, Double) = pickBestClassWithProbability(text)
     if (result._2 < Utils.probabilityLevel) ClassTypes.csvNeutral else result._1
+  }
+
+  def pickBestClassWithHighlights(text: String): (String, String) = {
+    val classType: String = pickBestClass(text)
+    if (classType == "0") {
+      (classType, text)
+    } else {
+      (classType, model.getHighlightedText(classType, text))
+    }
   }
 }

@@ -1,3 +1,5 @@
 package classifier.utils
 
-case class TextEntity(classType: String, text: String)
+import scala.collection.mutable.ArrayBuffer
+
+case class TextEntity(classType: String, tokenizedText: ArrayBuffer[Term])

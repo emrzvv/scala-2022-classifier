@@ -1,5 +1,9 @@
 package classifier
 
+import classifier.utils.{Term, Utils}
+
+import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 import scala.math.log
 
 class NaiveBayesModel(docLengths: Map[String, Int],
@@ -15,5 +19,23 @@ class NaiveBayesModel(docLengths: Map[String, Int],
 
   def wordLogProbability(c: String, w: String): Double = {
     log((wordCount(c).getOrElse(w, 0) + 1.0) / (dictionarySize + docLengths(c).toDouble))
+  }
+
+  def getHighlightedText(classType: String, text: String): String = {
+    val tokenizedText: ArrayBuffer[Term] = Utils.luceneTokenize(text)
+    val highlightsAmount = math.min(3, tokenizedText.length)
+
+    val analyzed = tokenizedText
+      .map(term => (term, wordCount(classType)(term.word)))
+      .sortWith((t1, t2) => t1._2 > t2._2).take(3)
+      .sortWith((t1, t2) => t1._1.start < t2._1.end)
+
+    @tailrec
+    def loop(n: Int = 0, currentText: String = text): String = {
+      if (n == highlightsAmount) currentText
+      else loop(n + 1, currentText.patch(analyzed(n)._1.start + 2 * n, "*", 0).patch(analyzed(n)._1.end + 2 * n + 1, "*", 0))
+    }
+
+    loop()
   }
 }
