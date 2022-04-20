@@ -17,7 +17,7 @@ object Main extends App {
 
   val classifier: NaiveBayesClassifier = time {new NaiveBayesClassifier(algorithm.getModel)}("creating and training model")
 
-  val text = "ура снова праздник!!!"
+  val text = "ура снова праздник!!! о нет снова ("
 
   val resLog = time { classifier.classifyLog(text) }("calculating logs probability")
   val resNorm = time { classifier.classifyNormal(text) }("calculating normal probability")

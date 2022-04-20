@@ -1,12 +1,11 @@
 package classifier
 
 import math.exp
-
-import utils.StringUtils
+import utils.{ClassTypes, Utils}
 
 class NaiveBayesClassifier(model: NaiveBayesModel) {
   def calculateProbability(classType: String, text: String): Double = {
-    StringUtils.naiveTokenize(text).split(" ")
+    Utils.naiveTokenize(text).split(" ")
       .map(model.wordLogProbability(classType, _)).sum + model.classLogProbability(classType)
   }
 
@@ -23,7 +22,12 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
           .foldLeft(0.0)(_ + _)))).toMap
   }
 
-  def pickBestClass(text: String): (String, Double) = {
+  def pickBestClassWithProbability(text: String): (String, Double) = {
     classifyNormal(text).toList.maxBy(_._2)
+  }
+
+  def pickBestClass(text: String): String = {
+    val result: (String, Double) = pickBestClassWithProbability(text)
+    if (result._2 < Utils.probabilityLevel) ClassTypes.csvNeutral else result._1
   }
 }

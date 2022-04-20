@@ -2,7 +2,7 @@ package classifier
 
 import com.github.tototoshi.csv.{CSVReader, DefaultCSVFormat}
 import utils.TextEntity
-import utils.StringUtils
+import utils.Utils
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -12,13 +12,13 @@ class NaiveBayesLearningAlgorithm() {
   def dictionary(): Set[String] = examples.flatMap(e => e.text.split(" ")).toSet
 
   def addExample(example: TextEntity): Unit =
-    examples.addOne(TextEntity(example.classType, StringUtils.naiveTokenize(example.text)))
+    examples.addOne(TextEntity(example.classType, Utils.naiveTokenize(example.text)))
 
   def addExample(classType: String, text: String): Unit =
-    examples.addOne(TextEntity(classType, StringUtils.naiveTokenize(text)))
+    examples.addOne(TextEntity(classType, Utils.naiveTokenize(text)))
 
   def addAllExamples(textsEntities: List[TextEntity]): Unit =
-    examples.addAll(textsEntities.map(te => TextEntity(te.classType, StringUtils.naiveTokenize(te.text))))
+    examples.addAll(textsEntities.map(te => TextEntity(te.classType, Utils.naiveTokenize(te.text))))
 
   def getModel: NaiveBayesModel = {
     // all text are already tokenized
