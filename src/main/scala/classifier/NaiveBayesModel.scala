@@ -28,7 +28,7 @@ class NaiveBayesModel(docLengths: Map[String, Int],
     val analyzed = tokenizedText
       .map(term => (term, wordCount(classType)(term.word)))
       .sortWith((t1, t2) => t1._2 > t2._2).take(3)
-      .sortWith((t1, t2) => t1._1.start < t2._1.end)
+      .sortWith((t1, t2) => t1._1.start < t2._1.start)
 
     @tailrec
     def loop(n: Int = 0, currentText: String = text): String = {
