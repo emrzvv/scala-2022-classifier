@@ -36,7 +36,7 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
 
   def pickBestClassWithHighlights(text: String): (String, String) = {
     val classType: String = pickBestClass(text)
-    if (classType == "0") {
+    if (classType == ClassTypes.csvNeutral) {
       (classType, text)
     } else {
       (classType, model.getHighlightedText(classType, text))
