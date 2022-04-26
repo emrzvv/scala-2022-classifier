@@ -1,9 +1,8 @@
 package classifier
 
 import math.exp
-import utils.{ClassTypes, Term, Utils}
+import utils.{ClassTypes, Utils}
 
-import scala.collection.mutable.ArrayBuffer
 
 class NaiveBayesClassifier(model: NaiveBayesModel) {
   def calculateProbability(classType: String, text: String): Double = {

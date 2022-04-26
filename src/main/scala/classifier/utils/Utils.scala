@@ -9,6 +9,9 @@ import scala.collection.mutable.ArrayBuffer
 object Utils {
   val probabilityLevel: Double = 0.7
 
+  val startHighlighter: String = "<b>"
+  val endHighlighter: String = "</b>"
+
   def naiveTokenize(s: String): String = {
     s.trim
       .replaceAll(raw"[^A-Za-zА-Яа-яё0-9 +]", "")

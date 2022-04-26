@@ -29,7 +29,6 @@ class NaiveBayesLearningAlgorithm() {
 
     val classToWords = docsByClass.map({ case (key, arrayValue) => (key, arrayValue.flatten) })
 
-
     val docLengths = classToWords.map({ case (key, words) => (key, words.length) })
 
     val docCount = docsByClass
