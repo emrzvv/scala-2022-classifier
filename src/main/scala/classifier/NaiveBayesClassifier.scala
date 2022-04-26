@@ -6,7 +6,8 @@ import utils.{ClassTypes, Utils}
 
 class NaiveBayesClassifier(model: NaiveBayesModel) {
   def calculateProbability(classType: String, text: String): Double = {
-    Utils.naiveTokenize(text).split(" ")
+    Utils.luceneTokenize(text)
+      .map(_.word)
       .map(model.wordLogProbability(classType, _)).sum + model.classLogProbability(classType)
   }
 

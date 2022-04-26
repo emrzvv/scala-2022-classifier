@@ -33,9 +33,9 @@ class NaiveBayesClassifierTest extends Specification {
   }
 
   def e2: MatchResult[String] = {
-    val text: String = "предоставляю спешите купить молоко и виагру"
+    val text: String = "предоставляю спешите купить молоко, виагру и услуги бухгалтера"
     val bestClass: String = classifier.pickBestClass(text)
-    bestClass === csvPositive
+    bestClass === csvNegative
   }
 
   def e3: MatchResult[Any] = {
