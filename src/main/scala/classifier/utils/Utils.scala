@@ -12,6 +12,7 @@ object Utils {
 
   val startHighlighter: String = "<b>"
   val endHighlighter: String = "</b>"
+  val toHighlightAmount: Int = 3
 
   def naiveTokenize(s: String): String = {
     s.trim
