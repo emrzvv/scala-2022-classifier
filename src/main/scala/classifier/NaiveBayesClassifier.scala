@@ -5,7 +5,7 @@ import utils.{ClassTypes, Utils}
 
 
 class NaiveBayesClassifier(model: NaiveBayesModel) {
-  val statistics: NaiveBayesStatistics = NaiveBayesStatistics(model)
+  lazy val statistics: NaiveBayesStatistics = NaiveBayesStatistics(model)
 
   def calculateProbability(classType: String, text: String): Double = {
     Utils.luceneTokenize(text)
