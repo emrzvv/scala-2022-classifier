@@ -5,6 +5,8 @@ import utils.{ClassTypes, Utils}
 
 
 class NaiveBayesClassifier(model: NaiveBayesModel) {
+  val statistics: NaiveBayesStatistics = NaiveBayesStatistics(model)
+
   def calculateProbability(classType: String, text: String): Double = {
     Utils.luceneTokenize(text)
       .map(_.word)
@@ -39,7 +41,7 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
     if (classType == ClassTypes.csvNeutral) {
       (classType, text)
     } else {
-      (classType, model.getHighlightedText(classType, text))
+      (classType, statistics.getHighlightedText(classType, text))
     }
   }
 }

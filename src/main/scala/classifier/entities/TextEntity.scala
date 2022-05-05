@@ -1,4 +1,4 @@
-package classifier.utils
+package classifier.entities
 
 import scala.collection.mutable.ArrayBuffer
 
