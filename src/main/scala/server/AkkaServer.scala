@@ -1,19 +1,21 @@
 package server
 
-import akka.actor.ActorSystem
+import actor.BayesActor
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import rest.RestAPI
 import service.NaiveBayesService
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.StdIn
 import scala.util.{Failure, Success}
 
 class AkkaServer {
   implicit val system: ActorSystem = ActorSystem("my-system")
 
-  val bayesService = new NaiveBayesService()
+  val bayesActor: ActorRef = system.actorOf(Props[BayesActor])
+  val bayesService = new NaiveBayesService(bayesActor)
   val restApi = new RestAPI(bayesService)
 
   val localhost: String = Config.address
