@@ -14,16 +14,21 @@ class BayesActor extends Actor {
   println("[MODEL IS READY]")
   override def receive: Receive = {
     case GetTextClass(text) =>
+      // нужно дописать логирование
       println(text)
       println(classifier.pickBestClass(text))
       sender() ! classifier.pickBestClass(text)
 
     case GetTextClassWithProbability(text) =>
       sender() ! classifier.pickBestClassWithProbability(text)
+
+    case GetTextClassWithHighlights(text) =>
+      sender() ! classifier.pickBestClassWithHighlights(text)
   }
 }
 
 object BayesActor {
   case class GetTextClass(text: String)
   case class GetTextClassWithProbability(text: String)
+  case class GetTextClassWithHighlights(text: String)
 }

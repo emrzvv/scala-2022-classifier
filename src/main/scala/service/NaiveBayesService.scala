@@ -13,5 +13,9 @@ import scala.concurrent.duration.DurationInt
 class NaiveBayesService(bayesActor: ActorRef) {
   implicit val timeout: Timeout = Timeout(2 seconds)
 
-  def getTextClass(text: String): Future[String] = (bayesActor ? GetTextClass(text)).mapTo[String]
+  def getTextClass(text: String): Future[String] =
+    (bayesActor ? GetTextClass(text)).mapTo[String]
+
+  def getTextClassWithHighlights(text: String): Future[(String, String)] =
+    (bayesActor ? GetTextClassWithHighlights(text)).mapTo[(String, String)]
 }

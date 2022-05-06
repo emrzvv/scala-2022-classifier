@@ -4,6 +4,7 @@ import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.server.Route
 import service.NaiveBayesService
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.server.Directive.addDirectiveApply
 import akka.http.scaladsl.server.Directives._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import play.twirl.api.Html
@@ -46,7 +47,7 @@ class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) ex
   }
 
   def classifyFormData: Route = {
-    path("classify") {
+    path("classify_type") {
       post {
         formFields("text", "category", "debug") { (text, _, _) =>
           onSuccess(bayesService.getTextClass(text)).map {
@@ -56,11 +57,25 @@ class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) ex
           }.apply(result => complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"<h1>$result</h1>")))
         }
       }
+    }
+  }
 
+  def classifyFormDataWithHighlights: Route = {
+    path("classify") {
+      post {
+        formFields("text", "category", "debug") { (text, _, _) =>
+
+          onSuccess(bayesService.getTextClassWithHighlights(text)).apply { (classType, text) =>
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`,
+              s"<div><h1>$classType</h1></div>" +
+              s"<div><p>$text</p></div>"))
+          }
+        }
+      }
     }
   }
 
   def routes: Route = pathPrefix("bayes") {
-    testRoute ~ getClassRoute ~ getClassForm ~ classifyFormData
+    testRoute ~ getClassRoute ~ getClassForm ~ classifyFormData ~ classifyFormDataWithHighlights
   }
 }
