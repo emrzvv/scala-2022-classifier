@@ -17,7 +17,6 @@ class AkkaServer {
   val bayesActor: ActorRef = system.actorOf(Props[BayesActor])
   val bayesService = new NaiveBayesService(bayesActor)
   val restApi = new RestAPI(bayesService)
-
   val localhost: String = Config.address
   val port: Int = Config.port
   val route: Route = restApi.routes

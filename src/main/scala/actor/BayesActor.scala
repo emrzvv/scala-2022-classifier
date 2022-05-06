@@ -8,6 +8,7 @@ class BayesActor extends Actor {
   val algorithm: NaiveBayesLearningAlgorithm = new NaiveBayesLearningAlgorithm
   algorithm.addExamplesFromCsv(getClass.getResource("../classifier/data/positive.csv").getPath)
   algorithm.addExamplesFromCsv(getClass.getResource("../classifier/data/negative.csv").getPath)
+  // println(getClass.getResource("../classifier/data/positive.csv").getPath)
 
   val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(algorithm.getModel)
   println("[MODEL IS READY]")
