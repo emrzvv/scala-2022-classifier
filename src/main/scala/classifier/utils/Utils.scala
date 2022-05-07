@@ -4,10 +4,14 @@ import classifier.entities.Term
 import org.apache.lucene.analysis.ru.RussianAnalyzer
 import org.apache.lucene.analysis.tokenattributes.{CharTermAttribute, OffsetAttribute}
 
+import java.nio.file.Paths
 import scala.collection.mutable.ArrayBuffer
 
 
 object Utils {
+  val negativeCsvPath: String = Paths.get(".").toAbsolutePath.toString + "/src/main/scala/classifier/data/negative.csv"
+  val positiveCsvPath: String = Paths.get(".").toAbsolutePath.toString + "/src/main/scala/classifier/data/positive.csv"
+
   val probabilityLevel: Double = 0.7
 
   val startHighlighter: String = "<b>"

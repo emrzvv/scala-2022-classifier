@@ -1,4 +1,4 @@
-@(text: Option[String], category: Option[String],
+@(text: Option[String], category: Option[Html],
         debug: Option[String])
 
 <div class="header-class">
@@ -9,8 +9,6 @@
     <form action="/bayes/classify" method="POST">
         <label for="textlabel">Введите текст</label>
         <textarea name="text">@text</textarea>
-        <input type="hidden" name="category">@category</input>
-        <input type="hidden" name="debug">@debug</input>
         <button type="submit">Классифицировать</button>
     </form>
 </div>
@@ -18,6 +16,5 @@
 
 @if(category.nonEmpty) {
     <p>Результат: @category</p>
-
     <p>@debug</p>
 }

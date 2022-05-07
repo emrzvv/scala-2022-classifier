@@ -3,15 +3,20 @@ package actor
 import akka.actor.Actor
 import classifier.{NaiveBayesClassifier, NaiveBayesLearningAlgorithm}
 import BayesActor._
+import classifier.utils.Utils
+import classifier.utils.ClassTypes._
+
+import java.nio.file.Paths
 
 class BayesActor extends Actor {
   val algorithm: NaiveBayesLearningAlgorithm = new NaiveBayesLearningAlgorithm
-  algorithm.addExamplesFromCsv(getClass.getResource("../classifier/data/positive.csv").getPath)
-  algorithm.addExamplesFromCsv(getClass.getResource("../classifier/data/negative.csv").getPath)
-  // println(getClass.getResource("../classifier/data/positive.csv").getPath)
+
+  algorithm.addExamplesFromCsv(Utils.negativeCsvPath)
+  algorithm.addExamplesFromCsv(Utils.positiveCsvPath)
 
   val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(algorithm.getModel)
-  println("[MODEL IS READY]")
+  println("[MODEL IS READY]") // в лог
+
   override def receive: Receive = {
     case GetTextClass(text) =>
       // нужно дописать логирование
@@ -23,12 +28,20 @@ class BayesActor extends Actor {
       sender() ! classifier.pickBestClassWithProbability(text)
 
     case GetTextClassWithHighlights(text) =>
-      sender() ! classifier.pickBestClassWithHighlights(text)
+      println(text)
+      println(classifier.pickBestClassWithProbability(text)) // в лог
+      sender() ! (classifier.pickBestClassWithHighlights(text) match {
+        case (classType, resultText) if classType == csvNegative => (readableNegative, resultText)
+        case (classType, resultText) if classType == csvNeutral => (readableNeutral, resultText)
+        case (classType, resultText) if classType == csvPositive => (readablePositive, resultText)
+      })
   }
 }
 
 object BayesActor {
   case class GetTextClass(text: String)
+
   case class GetTextClassWithProbability(text: String)
+
   case class GetTextClassWithHighlights(text: String)
 }
