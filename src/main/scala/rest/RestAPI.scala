@@ -6,14 +6,12 @@ import service.NaiveBayesService
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Directive.addDirectiveApply
 import akka.http.scaladsl.server.Directives._
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import play.twirl.api.Html
 import views.html.form
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
 
-class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) extends FailFastCirceSupport {
+class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) {
   implicit val twirlMarshaller: ToEntityMarshaller[Html] =
     Marshaller.withFixedContentType(ContentTypes.`text/html(UTF-8)`) { html =>
       HttpEntity(ContentTypes.`text/html(UTF-8)`, html.body)
