@@ -4,6 +4,7 @@ import actor.BayesActor
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
+import logger.ServerLogger
 import rest.RestAPI
 import service.NaiveBayesService
 
@@ -22,16 +23,17 @@ class AkkaServer {
   val route: Route = restApi.routes
 
   Http().newServerAt(localhost, port).bind(route)
-    .map(_ => println(s"Server is bounded to $localhost"))
+    .map(_ => ServerLogger.logger.info(s"Server is bounded to $localhost"))
     .onComplete {
       case Failure(exception) =>
-        println(s"Unexpected error while binding server: ${exception.getMessage}")
+        ServerLogger.logger.error(s"Unexpected error while binding server: ${exception.getMessage}")
         system.terminate()
       case Success(_) => ()
     }
 
   StdIn.readLine("Press ENTER to stop\n")
   system.terminate()
+  ServerLogger.logger.info("Server is shut down")
 }
 
 object AkkaServer {

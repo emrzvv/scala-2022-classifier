@@ -5,6 +5,7 @@ import classifier.{NaiveBayesClassifier, NaiveBayesLearningAlgorithm}
 import BayesActor._
 import classifier.utils.Utils
 import classifier.utils.ClassTypes._
+import logger.ServerLogger
 
 import java.nio.file.Paths
 
@@ -15,21 +16,17 @@ class BayesActor extends Actor {
   algorithm.addExamplesFromCsv(Utils.positiveCsvPath)
 
   val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(algorithm.getModel)
-  println("[MODEL IS READY]") // в лог
+  ServerLogger.logger.info("[MODEL IS READY]")
 
   override def receive: Receive = {
     case GetTextClass(text) =>
-      // нужно дописать логирование
-      println(text)
-      println(classifier.pickBestClass(text))
       sender() ! classifier.pickBestClass(text)
 
     case GetTextClassWithProbability(text) =>
       sender() ! classifier.pickBestClassWithProbability(text)
 
     case GetTextClassWithHighlights(text) =>
-      println(text)
-      println(classifier.pickBestClassWithProbability(text)) // в лог
+      ServerLogger.logger.info(s"Input text [$text] is classified: ${classifier.pickBestClassWithProbability(text)}")
       sender() ! (classifier.pickBestClassWithHighlights(text) match {
         case (classType, resultText) if classType == csvNegative => (readableNegative, resultText)
         case (classType, resultText) if classType == csvNeutral => (readableNeutral, resultText)

@@ -19,5 +19,7 @@ libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % "1.39.2"
 libraryDependencies += "io.circe"          %% "circe-core"           % "0.14.1"
 libraryDependencies += "io.circe"          %% "circe-generic"        % "0.14.1"
 libraryDependencies += "io.circe"          %% "circe-parser"         % "0.14.1"
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.10"
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4"
 
 enablePlugins(SbtTwirl)
