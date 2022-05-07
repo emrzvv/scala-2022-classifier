@@ -19,13 +19,6 @@ class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) ex
       HttpEntity(ContentTypes.`text/html(UTF-8)`, html.body)
     }
 
-  def getClassForm: Route = {
-    path("get_class") {
-      get {
-        complete(form(None, None, None))
-      }
-    }
-  }
 
   def classifyFormData: Route = {
     path("classify_type") {
@@ -40,18 +33,24 @@ class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) ex
   }
 
   def classifyFormDataWithHighlights: Route = {
-    path("classify") {
-      post {
-        formFields("text") { text =>
-          onSuccess(bayesService.getTextClassWithHighlights(text)) { (classType, highlightedText) =>
-            complete(form(Some(text), Some(Html(s"[$classType] : $highlightedText")), None))
-          }
-        }
+    pathPrefix("classify") {
+      pathEndOrSingleSlash {
+        concat(
+          get {
+            complete(form(None, None, None))
+          },
+          post {
+            formFields("text") { text =>
+              onSuccess(bayesService.getTextClassWithHighlights(text)) { (classType, highlightedText) =>
+                complete(form(Some(text), Some(Html(s"[$classType] : $highlightedText")), None))
+              }
+            }
+          })
       }
     }
   }
 
   def routes: Route = pathPrefix("bayes") {
-    getClassForm ~ classifyFormData ~ classifyFormDataWithHighlights
+    classifyFormData ~ classifyFormDataWithHighlights
   }
 }
