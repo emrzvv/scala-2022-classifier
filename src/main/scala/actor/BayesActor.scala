@@ -3,11 +3,13 @@ package actor
 import akka.actor.Actor
 import classifier.{NaiveBayesClassifier, NaiveBayesLearningAlgorithm}
 import BayesActor._
+import akka.util.Timeout
 import classifier.utils.Utils
 import classifier.utils.ClassTypes._
 import logger.ServerLogger
 
 import java.nio.file.Paths
+import scala.concurrent.duration.DurationInt
 
 class BayesActor extends Actor {
   val algorithm: NaiveBayesLearningAlgorithm = new NaiveBayesLearningAlgorithm
