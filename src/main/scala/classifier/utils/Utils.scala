@@ -23,9 +23,15 @@ object Utils {
       .replaceAll(raw"[^A-Za-zА-Яа-яё0-9 +]", "")
   }
 
+  // альтернативное решение: применить кмп, найдя все вхождения паттернов @ и http в строку,
+  // для каждого полученного вхождения пройтись до следующего слова, найдя его длину
+  // конкатенировать строку слева и справа от исключаемого слова
+  private def cleanGarbageNaive(s: String): String =
+    s.split("\\s+").filterNot(word => word.startsWith("@") || word.startsWith("http")).mkString(" ")
+
   def luceneTokenize(s: String): ArrayBuffer[Term] = {
     val analyzer = new RussianAnalyzer()
-    val ts = analyzer.tokenStream("text", s)
+    val ts = analyzer.tokenStream("text", cleanGarbageNaive(s))
     ts.reset()
 
     val out = new ArrayBuffer[Term]()

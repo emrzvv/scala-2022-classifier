@@ -17,6 +17,8 @@ class BayesActor extends Actor {
   val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(algorithm.getModel)
   ServerLogger.logger.info("[MODEL IS READY]")
 
+  println(algorithm.dictionary())
+
   override def receive: Receive = {
     case GetTextClass(text) =>
       sender() ! classifier.pickBestClass(text)
