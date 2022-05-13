@@ -3,5 +3,5 @@ package logger
 import com.typesafe.scalalogging.Logger
 
 object ServerLogger {
-  val logger = Logger("server-classifier-logger")
+  val logger: Logger = Logger("server-classifier-logger")
 }

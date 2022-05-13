@@ -23,7 +23,9 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.12" % Test,
   "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
   "ch.qos.logback" % "logback-classic" % "1.2.11",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4"
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
+  "org.webjars.npm" % "bootstrap" % "5.1.3",
+  "org.mdedetrich" %% "akka-http-webjars" % "0.5.0"
 )
 
 enablePlugins(SbtTwirl)

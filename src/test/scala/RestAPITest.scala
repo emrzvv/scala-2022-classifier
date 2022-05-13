@@ -34,14 +34,26 @@ class RestAPITest extends AnyWordSpec
   val positiveText: String = "ура ура привет хорошего дня"
 
   "AkkaServer" should {
-    "has statuscode ok for GET request /bayes/classify" in {
-      Get("/bayes/classify", form(None, None, None)) ~> routes ~> check {
+    "has statuscode ok for GET request /" in {
+      Get("/") ~> routes ~> check {
         status === StatusCodes.OK
       }
     }
 
-    "hast statuscode ok for POST request /bayes/classify and classify inputted text as positive" in {
-      Post("/bayes/classify", FormData("text" -> positiveText)) ~> routes ~> check {
+    "has statuscode ok for GET request /webjars/bootstrap.min.css" in {
+      Get("/webjars/bootstrap.min.css") ~> routes ~> check {
+        status === StatusCodes.OK
+      }
+    }
+
+    "has statuscode ok for GET request /classify" in {
+      Get("/classify", form(None, None, None)) ~> routes ~> check {
+        status === StatusCodes.OK
+      }
+    }
+
+    "hast statuscode ok for POST request /classify and classify inputted text as positive" in {
+      Post("/classify", FormData("text" -> positiveText)) ~> routes ~> check {
         status === StatusCodes.OK
         val result = bayesService.getTextClassWithHighlights(positiveText)
         Await.result(result, 10 seconds) === "позитивный"

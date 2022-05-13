@@ -1,5 +1,6 @@
 package rest
 
+import org.mdedetrich.akka.http.WebJarsSupport._
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.server.Route
 import service.NaiveBayesService
@@ -17,6 +18,17 @@ class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) {
       HttpEntity(ContentTypes.`text/html(UTF-8)`, html.body)
     }
 
+  private def webJarAssets: Route = pathPrefix("webjars") {
+    webJars
+  }
+
+  def home: Route = {
+    path("") {
+      get {
+        complete(Html("<h1>Главная</h1><a href=\"/classify\">Классификатор</a>"))
+      }
+    }
+  }
 
   def classifyFormData: Route = {
     path("classify_type") {
@@ -48,7 +60,11 @@ class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) {
     }
   }
 
-  def routes: Route = pathPrefix("bayes") {
+  private def classifierRoutes: Route = {
     classifyFormData ~ classifyFormDataWithHighlights
+  }
+
+  def routes: Route = {
+    webJarAssets ~ home ~ classifierRoutes
   }
 }

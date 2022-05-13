@@ -14,8 +14,8 @@ class NaiveBayesService(bayesActor: ActorRef) {
   implicit val timeout: Timeout = Timeout(10 seconds)
 
   def getTextClass(text: String): Future[String] =
-    (bayesActor ? GetTextClass(text)).mapTo[String]
+    (bayesActor ask GetTextClass(text)).mapTo[String]
 
   def getTextClassWithHighlights(text: String): Future[(String, String)] =
-    (bayesActor ? GetTextClassWithHighlights(text)).mapTo[(String, String)]
+    (bayesActor ask GetTextClassWithHighlights(text)).mapTo[(String, String)]
 }

@@ -23,7 +23,7 @@ class AkkaServer {
   val route: Route = restApi.routes
 
   Http().newServerAt(localhost, port).bind(route)
-    .map(_ => ServerLogger.logger.info(s"Server is bounded to $localhost"))
+    .map(_ => ServerLogger.logger.info(s"Server is bounded to $localhost:$port"))
     .onComplete {
       case Failure(exception) =>
         ServerLogger.logger.error(s"Unexpected error while binding server: ${exception.getMessage}")
