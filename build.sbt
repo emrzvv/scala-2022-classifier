@@ -9,6 +9,7 @@ lazy val root = (project in file("."))
 
 val AkkaVersion = "2.6.19"
 val AkkaHttpVersion = "10.2.9"
+val circeVersion = "0.14.1"
 
 libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "scala-csv" % "1.3.10",
@@ -25,7 +26,10 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.11",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
   "org.webjars.npm" % "bootstrap" % "5.1.3",
-  "org.mdedetrich" %% "akka-http-webjars" % "0.5.0"
+  "org.mdedetrich" %% "akka-http-webjars" % "0.5.0",
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion,
+  "io.circe" %% "circe-parser" % circeVersion
 )
 
 enablePlugins(SbtTwirl)

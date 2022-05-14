@@ -9,8 +9,9 @@ import scala.collection.mutable.ArrayBuffer
 
 
 object Utils {
-  val negativeCsvPath: String = Paths.get(".").toAbsolutePath.toString + "/src/main/scala/classifier/data/negative.csv"
-  val positiveCsvPath: String = Paths.get(".").toAbsolutePath.toString + "/src/main/scala/classifier/data/positive.csv"
+  val dataFolder: String = "/src/main/scala/classifier/data"
+  val negativeCsvPath: String = Paths.get(".").toAbsolutePath.toString + dataFolder + "/negative.csv"
+  val positiveCsvPath: String = Paths.get(".").toAbsolutePath.toString + dataFolder + "/positive.csv"
 
   val probabilityLevel: Double = 0.7
 

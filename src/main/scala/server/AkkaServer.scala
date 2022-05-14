@@ -13,7 +13,7 @@ import scala.io.StdIn
 import scala.util.{Failure, Success}
 
 class AkkaServer {
-  implicit val system: ActorSystem = ActorSystem("my-system")
+  implicit val system: ActorSystem = ActorSystem("server-system")
 
   val bayesActor: ActorRef = system.actorOf(Props[BayesActor])
   val bayesService = new NaiveBayesService(bayesActor)
@@ -23,17 +23,17 @@ class AkkaServer {
   val route: Route = restApi.routes
 
   Http().newServerAt(localhost, port).bind(route)
-    .map(_ => ServerLogger.logger.info(s"Server is bounded to $localhost:$port"))
+    .map(_ => ServerLogger.serverLogger.info(s"Server is bounded to $localhost:$port"))
     .onComplete {
       case Failure(exception) =>
-        ServerLogger.logger.error(s"Unexpected error while binding server: ${exception.getMessage}")
+        ServerLogger.serverLogger.error(s"Unexpected error while binding server: ${exception.getMessage}")
         system.terminate()
       case Success(_) => ()
     }
 
   StdIn.readLine("Press ENTER to stop\n")
   system.terminate()
-  ServerLogger.logger.info("Server is shut down")
+  ServerLogger.serverLogger.info("Server is shut down")
 }
 
 object AkkaServer {

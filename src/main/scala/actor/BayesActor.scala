@@ -15,9 +15,7 @@ class BayesActor extends Actor {
   algorithm.addExamplesFromCsv(Utils.positiveCsvPath)
 
   val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(algorithm.getModel)
-  ServerLogger.logger.info("[MODEL IS READY]")
-
-  println(algorithm.dictionary())
+  ServerLogger.serverLogger.info("[MODEL IS READY]")
 
   override def receive: Receive = {
     case GetTextClass(text) =>
@@ -27,7 +25,7 @@ class BayesActor extends Actor {
       sender() ! classifier.pickBestClassWithProbability(text)
 
     case GetTextClassWithHighlights(text) =>
-      ServerLogger.logger.info(s"Input text [$text] is classified: ${classifier.pickBestClassWithProbability(text)}")
+      ServerLogger.serverLogger.info(s"Input text [$text] is classified: ${classifier.pickBestClassWithProbability(text)}")
       sender() ! (classifier.pickBestClassWithHighlights(text) match {
         case (classType, resultText) if classType == csvNegative => (readableNegative, resultText)
         case (classType, resultText) if classType == csvNeutral => (readableNeutral, resultText)
