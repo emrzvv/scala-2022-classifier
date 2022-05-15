@@ -12,10 +12,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.StdIn
 import scala.util.{Failure, Success}
 
-class AkkaServer {
-  implicit val system: ActorSystem = ActorSystem("server-system")
-
-  val bayesActor: ActorRef = system.actorOf(Props[BayesActor])
+class AkkaServer(bayesActor: ActorRef)(implicit val system: ActorSystem) {
   val bayesService = new NaiveBayesService(bayesActor)
   val restApi = new RestAPI(bayesService)
   val localhost: String = Config.address
@@ -37,5 +34,5 @@ class AkkaServer {
 }
 
 object AkkaServer {
-  def apply() = new AkkaServer
+  def apply(bayesActor: ActorRef)(implicit actorSystem: ActorSystem) = new AkkaServer(bayesActor)
 }
