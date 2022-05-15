@@ -2,11 +2,23 @@ package telegram_bot.actor
 
 import akka.actor.{FSM, Props}
 import akka.http.scaladsl.HttpExt
-import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCodes}
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Future
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import spray.json.DefaultJsonProtocol._
+import akka.util.ByteString
+import spray.json.JsonFormat
+import telegram_bot.actor.BotActor.Data.BufferedUpdates
 
-import io.circe.syntax._
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.{Await, Future}
+import telegram_bot.models.{Chat, TelegramResponse, TextMessage, Update, User}
+
+import java.io.{BufferedWriter, File, PrintWriter}
+import scala.concurrent.duration.{Duration, DurationInt}
+import scala.io.Source
+import scala.util.{Failure, Success}
+
 
 class BotActor(token: String, http: HttpExt) extends FSM[BotActor.State, BotActor.Data] {
   private val defaultUrl: String = "https://api.telegram.org/bot"
@@ -20,42 +32,79 @@ class BotActor(token: String, http: HttpExt) extends FSM[BotActor.State, BotActo
 
   private implicit val system = context.system
 
+  private implicit val chatFormat = jsonFormat1(Chat)
+  private implicit val userFormat = jsonFormat4(User)
+  private implicit val messageFormat = jsonFormat5(TextMessage)
+  private implicit val updateFormat = jsonFormat2(Update)
+  private implicit val responseFormat = jsonFormat2(TelegramResponse)
+
+  log.info("Bot actor is ready")
+
   def go(lastUpdateId: Long): Future[HttpResponse] = {
-    val params: String = s"timeout=$getUpdatesTimeout&offset=$lastUpdateId"
-    val url = s"$defaultUrl$token/getUpdates?"
+    log.info(s"Getting updates from offset: $lastUpdateId")
+    val params: String = s"timeout=${getUpdatesTimeout.toString}&offset=${lastUpdateId.toString}"
+    val url = s"$defaultUrl$token/getUpdates?$params"
+
     http.singleRequest(HttpRequest(uri = url))
   }
 
-  def updateData(buffer: ArrayBuffer[String], lastUpdateId: Long): BufferedUpdates = {
+  def sendMessage(chatId: Long, text: String, parseMode: String, replyToMessageId: Option[Long]): Future[HttpResponse] = {
+    log.info(s"Sending message: $text to chat $chatId")
+    val params: String = s"chat_id=${chatId.toString}&text=$text&parse_mode=$parseMode&reply_to_message_id=${replyToMessageId.getOrElse("").toString}"
+    val url = s"$defaultUrl$token/sendMessage?$params"
+
+    http.singleRequest(HttpRequest(uri = url))
+  }
+
+  def updateData(buffer: Array[Update], lastUpdateId: Long): BufferedUpdates = {
     BufferedUpdates(buffer, lastUpdateId)
   }
 
-  startWith(Idle, BufferedUpdates(ArrayBuffer.empty, 0)) // change last processed update id
+  startWith(Idle, BufferedUpdates(Array.empty, 0)) // change last processed update id
 
   when(Idle) {
-    case Event(HttpRequest(_), BufferedUpdates(buffer, lastUpdateId)) => {
-      val incomeData = BufferedUpdates(buffer, lastUpdateId)
-      stay using incomeData
+    //    case Event(HttpRequest(_), BufferedUpdates(buffer, lastUpdateId)) => {
+    //      val incomeData = BufferedUpdates(buffer, lastUpdateId)
+    //      stay using incomeData
+    //    }
+    case Event(LoadUpdates, _) => println("ENTERING LOAD UPDATES"); goto(MakingRequest)
+    case Event(SendingMessage(bufferedUpdates), _) => {
+      println(s"DATA TO SEND: ${bufferedUpdates.lastUpdateId} ${bufferedUpdates.buffer.mkString("Array(", ", ", ")")}")
+
+      goto(MakingRequest) using BufferedUpdates(Array.empty[Update], bufferedUpdates.lastUpdateId)
     }
-    case Event(LoadUpdates, _) => goto(MakingRequest)
+    case Event(_, BufferedUpdates(buffer, lastUpdateId)) => {
+      val incomeData = BufferedUpdates(buffer, lastUpdateId)
+      println(s"DATA IN IDLE: $incomeData $lastUpdateId")
+
+      goto(MakingRequest)
+    }
   }
 
   when(MakingRequest) {
-    case Event(HttpRequest(_), BufferedUpdates(buffer, lastUpdateId)) => {
-      val incomeData = BufferedUpdates(buffer, lastUpdateId)
-      stay using incomeData
-    }
     case Event(HttpResponse(StatusCodes.OK, _, entity, _), BufferedUpdates(buffer, lastUpdateId))
       if entity != HttpEntity.Empty => {
-      // прикрутить materializer в go и вытащить последний update id
-      val newLastUpdateId = 0
-      val incomeMessages = ???
-      val newData = BufferedUpdates(buffer.addAll(incomeMessages), newLastUpdateId)
 
-      goto(Idle) using newData
+      val resp: Future[TelegramResponse] = Unmarshal(entity).to[TelegramResponse]
+
+      resp.map(r => if (r.ok) {
+        val updates = r.result
+        val newLastUpdateId = updates.last.update_id
+        println(s"NEW LAST UPDATE ID: $newLastUpdateId")
+        val newData = updateData(updates, newLastUpdateId + 1)
+        println(newData.buffer.mkString("Array(", ", ", ")"))
+        println(newData.lastUpdateId)
+        println("GOING TO IDLE")
+        self ! SendingMessage(newData)
+      } else {
+        println("error\n");
+        stay()
+      })
+
+      goto(Idle)
     }
     case Event(HttpResponse(StatusCodes.BadRequest, _, _, _), BufferedUpdates(buffer, lastUpdateId)) => {
-      log.error(s"we made a bad request. last update id: $lastUpdateId")
+      log.error(s"Bot made a bad request. Last update id: $lastUpdateId")
       stay()
     }
     case Event(LoadUpdates, _) =>
@@ -64,7 +113,7 @@ class BotActor(token: String, http: HttpExt) extends FSM[BotActor.State, BotActo
 
   whenUnhandled {
     case Event(value, stateData) => {
-      log.warning(s"unhandled event $value")
+      log.warning(s"Unhandled event $value")
       stay()
     }
   }
@@ -72,44 +121,16 @@ class BotActor(token: String, http: HttpExt) extends FSM[BotActor.State, BotActo
   onTransition {
     case Idle -> MakingRequest =>
       nextStateData match {
-        case BufferedUpdates(buffer, lastUpdateId) => go(lastUpdateId).pipeTo(self)
+        case BufferedUpdates(buffer, lastUpdateId) => println(s"OFFSET REQUEST ID: $lastUpdateId"); go(lastUpdateId).pipeTo(self)
       }
     case MakingRequest -> Idle =>
       nextStateData match {
-        case BufferedUpdates(buffer, lastUpdateId) => self ! LoadUpdates
+        case BufferedUpdates(buffer, lastUpdateId) => {
+          println(s"IN TRANSITION: $lastUpdateId --- ${buffer.mkString("Array(", ", ", ")")}")
+          self ! LoadUpdates
+        }
       }
   }
-
-//  private def sendRequest(methodName: String, params: String): Unit = {
-//    // implicit val timeout: Timeout = Timeout(120.seconds)
-//    val url = s"$defaultUrl$token/$methodName?$params"
-//    http.singleRequest(HttpRequest(uri = url)).onComplete { response =>
-//      context.self ! response
-//    }
-//  }
-//
-//  private def listen(): Unit = {
-//    while (true) {
-//      sendRequest("getUpdates", s"offset=${globalOffset + currentOffset}&timeout=$getUpdatesTimeout")
-//      println("SENDED")
-//      currentOffset += 1
-//    }
-//  }
-//
-//  override def preStart(): Unit = {
-//    listen()
-//  }
-//
-//  override def receive: Receive = {
-//    case HttpResponse(StatusCodes.OK, headers, entity, _) =>
-//      entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
-//        log.info("Got response, body: " + body.utf8String)
-//      }
-//    case resp @ HttpResponse(code, _, _, _) =>
-//      log.info("Request failed, response code: " + code)
-//      resp.discardEntityBytes()
-//  }
-
 
 }
 
@@ -120,13 +141,17 @@ object BotActor {
 
   object State {
     case object Idle extends State
+
     case object MakingRequest extends State
   }
 
   trait Data
+
   object Data {
-    case class BufferedUpdates(buffer: ArrayBuffer[String], lastUpdateId: Long) extends Data
+    case class BufferedUpdates(buffer: Array[Update], lastUpdateId: Long) extends Data
   }
 
   case object LoadUpdates
+
+  case class SendingMessage(bufferedUpdates: BufferedUpdates)
 }
