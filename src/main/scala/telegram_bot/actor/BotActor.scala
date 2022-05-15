@@ -37,23 +37,6 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
 
   private implicit val chatFormat = jsonFormat1(Chat)
   private implicit val userFormat = jsonFormat4(User)
-  //  implicit object MessageFormat extends RootJsonFormat[TextMessage] {
-  //    override def read(json: JsValue): TextMessage = json match {
-  //      case JsObject(fields) =>
-  //        try {
-  //          TextMessage(fields("message_id").convertTo[Long],
-  //            fields("from").convertTo[User],
-  //            fields("data").convertTo[Long],
-  //            fields("chat").convertTo[Chat],
-  //            fields("text").convertTo[String])
-  //        } catch {
-  //          case _ => deserializationError("cannot deserialize to TextMessage object")
-  //        }
-  //      case _ => deserializationError("not a TextMessage object")
-  //    }
-  //
-  //    override def write(obj: TextMessage): JsValue =
-  //  }
   private implicit val messageFormat = jsonFormat5(Message)
   private implicit val updateFormat = jsonFormat2(Update)
   private implicit val responseFormat = jsonFormat2(TelegramResponse)
@@ -86,20 +69,22 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
   startWith(Idle, BufferedUpdates(Array.empty, 0))
 
   when(Idle) {
-    case Event(LoadUpdates, _) => println("ENTERING LOAD UPDATES"); goto(MakingRequest)
-    case Event(SendMessage(bufferedUpdates), _) => {
-      println(s"DATA TO SEND: ${bufferedUpdates.lastUpdateId} ${bufferedUpdates.buffer.mkString("Array(", ", ", ")")}")
+    case Event(LoadUpdates, _) => {
+      log.info("loading updates")
+      goto(MakingRequest)
+    }
 
+    case Event(SendMessage(bufferedUpdates), _) => {
       val results = bufferedUpdates.buffer.map(update => update.message.text match {
         case Some(messageText) =>
           val classifyResult = (bayesActor ? GetTextClassWithHighlights(messageText)).mapTo[(String, String)]
           classifyResult.onComplete {
             case Success((classType, highlightedText)) =>
               if (classType == ClassTypes.readableNeutral) {
-                log.info(s"встречен нейтральный текст: ${update.message.text}")
-                HttpResponse(status = StatusCodes.OK)
-              } else sendMessage(update.message.chat.id, s"$classType: $highlightedText", "HTML", Some(update.message.message_id))
-            case _ => HttpResponse(status = StatusCodes.InternalServerError)
+                log.info(s"встречен нейтральный текст: ${update.message.text.getOrElse("")}")
+              } else sendMessage(update.message.chat.id, s"[${classType.toUpperCase}]: $highlightedText", "HTML", Some(update.message.message_id))
+            case _ =>
+              log.warning("ошибка со стороны BayesActor")
           }
         case None =>
           log.info("встречено нетекстовое сообщение")
@@ -108,66 +93,56 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
       goto(MakingRequest) using BufferedUpdates(Array.empty[Update], bufferedUpdates.lastUpdateId)
     }
 
-
-  case Event(_, BufferedUpdates(buffer, lastUpdateId)) => {
-    val incomeData = BufferedUpdates(buffer, lastUpdateId)
-    println(s"DATA IN IDLE: $incomeData $lastUpdateId")
-
-    stay()
+    case Event(_, _) => {
+      stay()
+    }
   }
-}
 
-when (MakingRequest) {
-case Event (HttpResponse (StatusCodes.OK, _, entity, _), BufferedUpdates (buffer, lastUpdateId) )
-if entity != HttpEntity.Empty => {
+  when(MakingRequest) {
+    case Event(HttpResponse(StatusCodes.OK, _, entity, _), BufferedUpdates(buffer, lastUpdateId))
+      if entity != HttpEntity.Empty => {
 
-val resp: Future[TelegramResponse] = Unmarshal (entity).to[TelegramResponse]
-println ("ENTERED MAKING REQUEST")
+      val resp: Future[TelegramResponse] = Unmarshal(entity).to[TelegramResponse]
 
-resp.map (r => if (r.ok) {
-val updates = r.result
-val newLastUpdateId = updates.last.update_id
-println (s"NEW LAST UPDATE ID: $newLastUpdateId")
-val newData = updateData (updates, newLastUpdateId + 1)
-println (newData.buffer.mkString ("Array(", ", ", ")") )
-println (newData.lastUpdateId)
-println ("GOING TO IDLE")
-self ! SendMessage (newData)
-} else {
-println ("error\n");
-stay ()
-})
+      resp.map(r => if (r.ok) {
+        val updates = r.result
+        val newLastUpdateId = updates.last.update_id
+        val newData = updateData(updates, newLastUpdateId + 1)
+        self ! SendMessage(newData)
+      } else {
+        log.error("bad unmarhsalling")
+        stay()
+      })
 
-goto (Idle)
-}
-case Event (HttpResponse (StatusCodes.BadRequest, _, _, _), BufferedUpdates (buffer, lastUpdateId) ) => {
-log.error (s"Bot made a bad request. Last update id: $lastUpdateId")
-stay ()
-}
-case Event (LoadUpdates, _) =>
-stay () // just ignore
-}
+      goto(Idle)
+    }
+    case Event(HttpResponse(statusCode, _, _, _), BufferedUpdates(buffer, lastUpdateId)) => {
+      log.error(s"Плохой ответ от telegram api: $statusCode; lastUpdateId: $lastUpdateId ")
+      stay()
+    }
+    case Event(LoadUpdates, _) =>
+      stay()
+  }
 
-whenUnhandled {
-case Event (value, stateData) => {
-log.warning (s"Unhandled event $value")
-stay ()
-}
-}
+  whenUnhandled {
+    case Event(value, stateData) => {
+      log.warning(s"Unhandled event $value")
+      stay()
+    }
+  }
 
-onTransition {
-case Idle -> MakingRequest =>
-nextStateData match {
-case BufferedUpdates (buffer, lastUpdateId) =>
-println ("TRANSITION IDLE -> MAKINGREQUEST")
-getUpdates (lastUpdateId).pipeTo (self)
-}
-case MakingRequest -> Idle =>
-nextStateData match {
-case BufferedUpdates (buffer, lastUpdateId) =>
-self ! LoadUpdates
-}
-}
+  onTransition {
+    case Idle -> MakingRequest =>
+      nextStateData match {
+        case BufferedUpdates(buffer, lastUpdateId) =>
+          getUpdates(lastUpdateId).pipeTo(self)
+      }
+    case MakingRequest -> Idle =>
+      nextStateData match {
+        case BufferedUpdates(buffer, lastUpdateId) =>
+          self ! LoadUpdates
+      }
+  }
 
 }
 
