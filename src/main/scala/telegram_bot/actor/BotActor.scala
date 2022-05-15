@@ -2,23 +2,15 @@ package telegram_bot.actor
 
 import akka.actor.{FSM, Props}
 import akka.http.scaladsl.HttpExt
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.Uri.Query
 import spray.json.DefaultJsonProtocol._
-import akka.util.ByteString
-import spray.json.JsonFormat
 import telegram_bot.actor.BotActor.Data.BufferedUpdates
 
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, Future}
 import telegram_bot.models.{Chat, TelegramResponse, TextMessage, Update, User}
-
-import java.io.{BufferedWriter, File, PrintWriter}
-import scala.concurrent.duration.{Duration, DurationInt}
-import scala.io.Source
-import scala.util.{Failure, Success}
-
 
 class BotActor(token: String, http: HttpExt) extends FSM[BotActor.State, BotActor.Data] {
   private val defaultUrl: String = "https://api.telegram.org/bot"
@@ -42,16 +34,16 @@ class BotActor(token: String, http: HttpExt) extends FSM[BotActor.State, BotActo
 
   def go(lastUpdateId: Long): Future[HttpResponse] = {
     log.info(s"Getting updates from offset: $lastUpdateId")
-    val params: String = s"timeout=${getUpdatesTimeout.toString}&offset=${lastUpdateId.toString}"
-    val url = s"$defaultUrl$token/getUpdates?$params"
+    val query = Query("timeout" -> getUpdatesTimeout.toString, "offset" -> lastUpdateId.toString)
+    val url = Uri(s"$defaultUrl$token/getUpdates").withQuery(query)
 
     http.singleRequest(HttpRequest(uri = url))
   }
 
   def sendMessage(chatId: Long, text: String, parseMode: String, replyToMessageId: Option[Long]): Future[HttpResponse] = {
     log.info(s"Sending message: $text to chat $chatId")
-    val params: String = s"chat_id=${chatId.toString}&text=$text&parse_mode=$parseMode&reply_to_message_id=${replyToMessageId.getOrElse("").toString}"
-    val url = s"$defaultUrl$token/sendMessage?$params"
+    val query = Query("chat_id" -> chatId.toString, "text" -> text, "parse_mode" -> parseMode, "reply_to_message_id" -> replyToMessageId.getOrElse("").toString)
+    val url = Uri(s"$defaultUrl$token/sendMessage").withQuery(query)
 
     http.singleRequest(HttpRequest(uri = url))
   }
@@ -71,13 +63,18 @@ class BotActor(token: String, http: HttpExt) extends FSM[BotActor.State, BotActo
     case Event(SendingMessage(bufferedUpdates), _) => {
       println(s"DATA TO SEND: ${bufferedUpdates.lastUpdateId} ${bufferedUpdates.buffer.mkString("Array(", ", ", ")")}")
 
+      val results = bufferedUpdates.buffer.map(update =>
+          sendMessage(update.message.chat.id, "finally", "HTML", Some(update.message.message_id)))
+
+      results.foreach(futureResponse => futureResponse.map(response => if (response.status != StatusCodes.OK) log.warning(s"message has not been sent: ${response.entity.toString}")))
+
       goto(MakingRequest) using BufferedUpdates(Array.empty[Update], bufferedUpdates.lastUpdateId)
     }
     case Event(_, BufferedUpdates(buffer, lastUpdateId)) => {
       val incomeData = BufferedUpdates(buffer, lastUpdateId)
       println(s"DATA IN IDLE: $incomeData $lastUpdateId")
 
-      goto(MakingRequest)
+      stay()
     }
   }
 
