@@ -38,7 +38,7 @@ object Utils {
     val out = new ArrayBuffer[Term]()
 
     // исключаем "мусорные" слова
-    val toExclude = Set("rt", "эт", "прост", "хоч", "так", "поч", "са", "сво")
+    val toExclude = Set("rt", "эт", "прост", "хоч", "так", "поч", "са", "сво", "котор")
 
     while (ts.incrementToken()) {
       val word = ts.getAttribute(classOf[CharTermAttribute]).toString

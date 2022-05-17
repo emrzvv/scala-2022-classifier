@@ -10,9 +10,7 @@ object Main extends App {
   if (args.length == 0) {
     println("oops, no bot token")
   } else {
-
     val bot = Bot(args(0), bayesActor)
-
   }
 
   AkkaServer(bayesActor)
