@@ -3,27 +3,35 @@ package telegram_bot.actor
 import actor.BayesActor
 import akka.actor.{ActorRef, ActorSystem, FSM, Props}
 import akka.http.scaladsl.HttpExt
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResponse, StatusCodes, Uri}
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Uri.Query
 import akka.pattern.ask
 import akka.util
 import akka.util.Timeout
-import classifier.utils.{ClassTypes, Utils}
+import classifier.utils.ClassTypes
 import spray.json.DefaultJsonProtocol._
-import spray.json.{JsObject, JsString, JsValue, JsonFormat, RootJsonFormat, deserializationError}
 import telegram_bot.actor.BotActor.Data.BufferedUpdates
 
-import scala.concurrent.{Await, Future}
-import telegram_bot.models.{Chat, Message, TelegramResponse, Text, Update, User}
+import scala.concurrent.Future
+import telegram_bot.models.{Chat, Message, TelegramResponse, Update, User}
 
 import scala.concurrent.duration.DurationInt
 import scala.util.Success
 
+/**
+ * актор, отвечающий за получение апдейтов от telegram api и реакцию на эти апдейты.
+ * для реализации используется интерфейс final state machine:
+ * https://doc.akka.io/docs/akka/current/fsm.html
+ *
+ * @param token      токен бота
+ * @param http       объект Http, необходимый для отправки http-запросов
+ * @param bayesActor актор классификатора, которому отправляются запросы на классификацию текстов
+ */
 class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[BotActor.State, BotActor.Data] {
   private val defaultUrl: String = "https://api.telegram.org/bot"
-  private val getUpdatesTimeout: Int = 120
+  private val getUpdatesTimeout: Int = 120 // сколько можем ждать ответа от telegram api на запрос getUpdates
 
   import BayesActor._
   import BotActor._
@@ -35,6 +43,9 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
   private implicit val system: ActorSystem = context.system
   private implicit val timeout: util.Timeout = Timeout(10.seconds)
 
+  /**
+   * объекты JsonFormat, необходимые для разбора поступающего json
+   */
   private implicit val chatFormat = jsonFormat1(Chat)
   private implicit val userFormat = jsonFormat4(User)
   private implicit val messageFormat = jsonFormat5(Message)
@@ -42,6 +53,13 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
   private implicit val responseFormat = jsonFormat2(TelegramResponse)
 
   log.info("Bot actor is ready")
+
+  def makeRequest(methodName: String, query: Option[Query], logMessage: Option[String]): Future[HttpResponse] = {
+    log.info(logMessage.getOrElse(s"Making request $methodName with params ${query.toString}"))
+    val url = Uri(s"$defaultUrl$token/$methodName").withQuery(query.getOrElse(Query.Empty))
+
+    http.singleRequest(HttpRequest(uri = url))
+  }
 
   def getUpdates(lastUpdateId: Long): Future[HttpResponse] = {
     log.info(s"Getting updates from offset: $lastUpdateId")
@@ -75,19 +93,30 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
     }
 
     case Event(SendMessage(bufferedUpdates), _) => {
-      val results = bufferedUpdates.buffer.map(update => update.message.text match {
-        case Some(messageText) =>
-          val classifyResult = (bayesActor ? GetTextClassWithHighlights(messageText)).mapTo[(String, String)]
-          classifyResult.onComplete {
-            case Success((classType, highlightedText)) =>
-              if (classType == ClassTypes.readableNeutral) {
-                log.info(s"встречен нейтральный текст: ${update.message.text.getOrElse("")}")
-              } else sendMessage(update.message.chat.id, s"[${classType.toUpperCase}]: $highlightedText", "HTML", Some(update.message.message_id))
-            case _ =>
-              log.warning("ошибка со стороны BayesActor")
-          }
-        case None =>
-          log.info("встречено нетекстовое сообщение")
+      val results = bufferedUpdates.buffer.map(update => update.message match {
+        case Some(message) => message.text match {
+          case Some(messageText) =>
+            val classifyResult = (bayesActor ? GetTextClassWithHighlights(messageText)).mapTo[(String, String)]
+
+            classifyResult.onComplete {
+              case Success((classType, highlightedText)) =>
+                if (classType == ClassTypes.readableNeutral) {
+                  log.info(s"Встречен нейтральный текст: $messageText")
+                } else {
+                  val query = Query("chat_id" -> message.chat.get.id.toString,
+                    "text" -> s"[${classType.toUpperCase}]: $highlightedText",
+                    "parse_mode" -> "HTML",
+                    "reply_to_message_id" -> Some(message.message_id).getOrElse("").toString)
+
+                  makeRequest("sendMessage", Some(query), Some(s"Отправлено сообщение в чат ${message.chat.get.id}"))
+                }
+              case _ =>
+                log.warning("ошибка со стороны BayesActor")
+            }
+          case None =>
+            log.info("Встречено нетекстовое сообщение")
+        }
+        case None => log.info("В полученном апдейте нет сообщения")
       })
 
       goto(MakingRequest) using BufferedUpdates(Array.empty[Update], bufferedUpdates.lastUpdateId)
@@ -102,15 +131,17 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
     case Event(HttpResponse(StatusCodes.OK, _, entity, _), BufferedUpdates(buffer, lastUpdateId))
       if entity != HttpEntity.Empty => {
 
-      val resp: Future[TelegramResponse] = Unmarshal(entity).to[TelegramResponse]
+      val telegramResponse: Future[TelegramResponse] = Unmarshal(entity).to[TelegramResponse]
 
-      resp.map(r => if (r.ok) {
-        val updates = r.result
+      println(s"GOT TELEGRAM RESP: $telegramResponse")
+
+      telegramResponse.map(response => if (response.ok) {
+        val updates = response.result
         val newLastUpdateId = updates.last.update_id
         val newData = updateData(updates, newLastUpdateId + 1)
         self ! SendMessage(newData)
       } else {
-        log.error("bad unmarhsalling")
+        log.error("bad unmarshalling")
         stay()
       })
 
@@ -135,7 +166,9 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
     case Idle -> MakingRequest =>
       nextStateData match {
         case BufferedUpdates(buffer, lastUpdateId) =>
-          getUpdates(lastUpdateId).pipeTo(self)
+          val query = Query("timeout" -> getUpdatesTimeout.toString, "offset" -> lastUpdateId.toString)
+          makeRequest("getUpdates", Some(query), Some(s"Запрашиваем апдейты. Последний апдейт: $lastUpdateId"))
+            .pipeTo(self)
       }
     case MakingRequest -> Idle =>
       nextStateData match {

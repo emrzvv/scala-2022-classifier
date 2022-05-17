@@ -12,12 +12,26 @@ import views.html.form
 
 import scala.concurrent.ExecutionContext
 
+/**
+ * API akka http для сервера
+ *
+ * @param bayesService сервис, взаимодействующий с актором
+ * @param ec           execution context
+ */
 class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) {
+  /**
+   * кастомный маршаллер из twirl html в HttpEntity
+   */
   implicit val twirlMarshaller: ToEntityMarshaller[Html] =
     Marshaller.withFixedContentType(ContentTypes.`text/html(UTF-8)`) { html =>
       HttpEntity(ContentTypes.`text/html(UTF-8)`, html.body)
     }
 
+  /**
+   * webjars, необходимый для подключения bootstrap
+   *
+   * @return webjars
+   */
   private def webJarAssets: Route = pathPrefix("webjars") {
     webJars
   }

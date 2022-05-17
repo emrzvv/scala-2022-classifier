@@ -12,6 +12,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.StdIn
 import scala.util.{Failure, Success}
 
+/**
+ * akka http сервер. настройки в объекте Config
+ *
+ * @param bayesActor актор, отвечающий за обучение модели и классификацию
+ * @param system     актор-система
+ */
 class AkkaServer(bayesActor: ActorRef)(implicit val system: ActorSystem) {
   val bayesService = new NaiveBayesService(bayesActor)
   val restApi = new RestAPI(bayesService)

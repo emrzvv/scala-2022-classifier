@@ -1,21 +1,23 @@
 package actor
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging}
 import classifier.{NaiveBayesClassifier, NaiveBayesLearningAlgorithm}
 import BayesActor._
 import classifier.utils.Utils
 import classifier.utils.ClassTypes._
 import logger.ServerLogger
 
-
-class BayesActor extends Actor {
+/**
+ * класс актора, отвечающий за классифицкацию текстов
+ */
+class BayesActor extends Actor with ActorLogging {
   val algorithm: NaiveBayesLearningAlgorithm = new NaiveBayesLearningAlgorithm
 
   algorithm.addExamplesFromCsv(Utils.negativeCsvPath)
   algorithm.addExamplesFromCsv(Utils.positiveCsvPath)
 
   val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(algorithm.getModel)
-  ServerLogger.serverLogger.info("[MODEL IS READY]")
+  log.info("Bayes Actor and model is ready")
 
   override def receive: Receive = {
     case GetTextClass(text) =>
@@ -25,7 +27,12 @@ class BayesActor extends Actor {
       sender() ! classifier.pickBestClassWithProbability(text)
 
     case GetTextClassWithHighlights(text) =>
-      ServerLogger.serverLogger.info(s"Input text [$text] is classified: ${classifier.pickBestClassWithProbability(text)}")
+      log.info(s"Input text [$text] is classified: ${classifier.pickBestClassWithProbability(text)}")
+
+      /**
+       * ставим в соответствие классам, описывающим окрас текста в классификаторе
+       * "человекочитаемые" класса
+       */
       sender() ! (classifier.pickBestClassWithHighlights(text) match {
         case (classType, resultText) if classType == csvNegative => (readableNegative, resultText)
         case (classType, resultText) if classType == csvNeutral => (readableNeutral, resultText)
