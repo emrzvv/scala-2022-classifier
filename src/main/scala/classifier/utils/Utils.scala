@@ -37,10 +37,13 @@ object Utils {
 
     val out = new ArrayBuffer[Term]()
 
+    // исключаем "мусорные" слова
+    val toExclude = Set("rt", "эт", "прост", "хоч", "так", "поч", "са", "сво")
+
     while (ts.incrementToken()) {
       val word = ts.getAttribute(classOf[CharTermAttribute]).toString
       val offsets = ts.getAttribute(classOf[OffsetAttribute])
-      out.addOne(Term(word, offsets.startOffset(), offsets.endOffset()))
+      if (!toExclude.contains(word)) out.addOne(Term(word, offsets.startOffset(), offsets.endOffset()))
     }
     out
   }
