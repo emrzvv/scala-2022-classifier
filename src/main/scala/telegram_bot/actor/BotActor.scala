@@ -61,25 +61,6 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
     http.singleRequest(HttpRequest(uri = url))
   }
 
-  def getUpdates(lastUpdateId: Long): Future[HttpResponse] = {
-    log.info(s"Getting updates from offset: $lastUpdateId")
-    val query = Query("timeout" -> getUpdatesTimeout.toString, "offset" -> lastUpdateId.toString)
-    val url = Uri(s"$defaultUrl$token/getUpdates").withQuery(query)
-
-    http.singleRequest(HttpRequest(uri = url))
-  }
-
-  def sendMessage(chatId: Long, text: String, parseMode: String, replyToMessageId: Option[Long]): Future[HttpResponse] = {
-    log.info(s"Sending message: $text to chat $chatId")
-    val query = Query("chat_id" -> chatId.toString,
-      "text" -> text,
-      "parse_mode" -> parseMode,
-      "reply_to_message_id" -> replyToMessageId.getOrElse("").toString)
-    val url = Uri(s"$defaultUrl$token/sendMessage").withQuery(query)
-
-    http.singleRequest(HttpRequest(uri = url))
-  }
-
   def updateData(buffer: Array[Update], lastUpdateId: Long): BufferedUpdates = {
     BufferedUpdates(buffer, lastUpdateId)
   }
