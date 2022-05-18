@@ -28,9 +28,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
   "org.webjars.npm" % "bootstrap" % "5.1.3",
   "org.mdedetrich" %% "akka-http-webjars" % "0.5.0",
-  "io.circe" %% "circe-core" % circeVersion,
-  "io.circe" %% "circe-generic" % circeVersion,
-  "io.circe" %% "circe-parser" % circeVersion,
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion
 )
 

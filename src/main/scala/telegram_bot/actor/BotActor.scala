@@ -133,8 +133,6 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
 
       val telegramResponse: Future[TelegramResponse] = Unmarshal(entity).to[TelegramResponse]
 
-      println(s"GOT TELEGRAM RESP: $telegramResponse")
-
       telegramResponse.map(response => if (response.ok) {
         val updates = response.result
         val newLastUpdateId = updates.last.update_id
