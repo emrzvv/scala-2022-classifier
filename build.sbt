@@ -10,6 +10,12 @@ lazy val root = (project in file("."))
 val AkkaVersion = "2.6.19"
 val AkkaHttpVersion = "10.2.9"
 
+ThisBuild / scalacOptions ++= Seq(
+  "-encoding", "utf8",
+  "-Xfatal-warnings",
+  "-deprecation"
+)
+
 libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "scala-csv" % "1.3.10",
   "org.specs2" %% "specs2-core" % "4.15.0" % Test,
