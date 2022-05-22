@@ -26,7 +26,7 @@ class RestAPITest extends AnyWordSpec
 
   implicit val timeout: RouteTestTimeout = RouteTestTimeout(10 seconds)
 
-  val bayesActor: ActorRef = system.actorOf(Props[BayesActor])
+  val bayesActor: ActorRef = system.actorOf(Props[BayesActor]())
   val bayesService = new NaiveBayesService(bayesActor)
   val restApi = new RestAPI(bayesService)
   val routes: Route = restApi.routes

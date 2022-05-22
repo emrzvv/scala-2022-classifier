@@ -35,6 +35,8 @@ class BayesActor extends Actor {
 }
 
 object BayesActor {
+  def apply(): BayesActor = new BayesActor
+
   case class GetTextClass(text: String)
 
   case class GetTextClassWithProbability(text: String)

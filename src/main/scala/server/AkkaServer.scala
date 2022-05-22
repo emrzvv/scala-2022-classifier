@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 class AkkaServer {
   implicit val system: ActorSystem = ActorSystem("my-system")
 
-  val bayesActor: ActorRef = system.actorOf(Props[BayesActor])
+  val bayesActor: ActorRef = system.actorOf(Props[BayesActor]())
   val bayesService = new NaiveBayesService(bayesActor)
   val restApi = new RestAPI(bayesService)
   val localhost: String = Config.address
