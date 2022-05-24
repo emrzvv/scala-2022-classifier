@@ -1,5 +1,6 @@
 package classifier
 
+import classifier.entities.{ClassificationResult, ClassificationWithStatisticsResult}
 import classifier.utils.ClassTypes.{ClassType, Neutral}
 
 import math.exp
@@ -29,21 +30,21 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
           .foldLeft(0.0)(_ + _)))).toMap
   }
 
-  def pickBestClassWithProbability(text: String): (ClassType, Double) = {
-    classifyNormal(text).toList.maxBy(_._2)
+  def pickBestClassWithProbability(text: String): ClassificationResult = {
+    ClassificationResult tupled classifyNormal(text).toList.maxBy(_._2)
   }
 
   def pickBestClass(text: String): ClassType = {
-    val result: (ClassType, Double) = pickBestClassWithProbability(text)
-    if (result._2 < Utils.probabilityLevel) ClassTypes.Neutral else result._1
+    val result: ClassificationResult = pickBestClassWithProbability(text)
+    if (result.probability < Utils.probabilityLevel) ClassTypes.Neutral else result.classType
   }
 
-  def pickBestClassWithHighlights(text: String): (ClassType, String) = {
+  def pickBestClassWithHighlights(text: String): ClassificationWithStatisticsResult = {
     val classType: ClassType = pickBestClass(text)
     if (classType == Neutral) {
-      (classType, text)
+      ClassificationWithStatisticsResult(classType, text)
     } else {
-      (classType, statistics.getHighlightedText(classType, text))
+      ClassificationWithStatisticsResult(classType, statistics.getHighlightedText(classType, text))
     }
   }
 }

@@ -4,6 +4,7 @@ import actor.BayesActor._
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import classifier.entities.ClassificationWithStatisticsResult
 import classifier.utils.ClassTypes.ClassType
 
 import scala.language.postfixOps
@@ -16,6 +17,6 @@ class NaiveBayesService(bayesActor: ActorRef) {
   def getTextClass(text: String): Future[ClassType] =
     (bayesActor ask GetTextClass(text)).mapTo[ClassType]
 
-  def getTextClassWithHighlights(text: String): Future[(ClassType, String)] =
-    (bayesActor ask GetTextClassWithHighlights(text)).mapTo[(ClassType, String)]
+  def getTextClassWithHighlights(text: String): Future[ClassificationWithStatisticsResult] =
+    (bayesActor ask GetTextClassWithHighlights(text)).mapTo[ClassificationWithStatisticsResult]
 }

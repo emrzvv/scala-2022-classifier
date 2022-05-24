@@ -51,8 +51,10 @@ class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) {
           },
           post {
             formFields("text") { text =>
-              onSuccess(bayesService.getTextClassWithHighlights(text)) { (classType, highlightedText) =>
-                complete(form(Some(text), Some(Html(s"[${classType.toString}] : $highlightedText")), None))
+              onSuccess(bayesService.getTextClassWithHighlights(text)) { result =>
+                complete(form(Some(text),
+                  Some(Html(s"[${result.classType.toString}] : ${result.highlightedText}")),
+                  None))
               }
             }
           })
