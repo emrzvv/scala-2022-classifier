@@ -7,6 +7,7 @@ import utils.{ClassTypes, Utils}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
+import scala.util.Using
 
 class NaiveBayesLearningAlgorithm() {
   private val examples: ArrayBuffer[TextEntity] = ArrayBuffer.newBuilder[TextEntity].result()
@@ -47,14 +48,13 @@ class NaiveBayesLearningAlgorithm() {
       override val delimiter: Char = ';'
     }
 
-    val reader = CSVReader.open(path)
-
-    addAllExamples(reader.all().map(col => entities.TextEntity(col(4) match {
-      case "-1" => ClassTypes.Negative
-      case "1" => ClassTypes.Positive
-      case "0" => ClassTypes.Neutral
-    }, Utils.luceneTokenize(col(3)))))
-
-    reader.close()
+    Using(CSVReader.open(path)) { reader =>
+      addAllExamples(reader.all().map(col => entities.TextEntity(col(4) match {
+        case "-1" => ClassTypes.Negative
+        case "1" => ClassTypes.Positive
+        case "0" => ClassTypes.Neutral
+      }, Utils.luceneTokenize(col(3)))))
+      reader.close()
+    }
   }
 }
