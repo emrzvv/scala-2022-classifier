@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Route
 import logger.ServerLogger
 import rest.RestAPI
 import service.NaiveBayesService
+import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.StdIn
@@ -18,9 +19,11 @@ class AkkaServer {
   val bayesActor: ActorRef = system.actorOf(Props[BayesActor]())
   val bayesService = new NaiveBayesService(bayesActor)
   val restApi = new RestAPI(bayesService)
-  val localhost: String = Config.address
-  val port: Int = Config.port
   val route: Route = restApi.routes
+
+  val config: Config = ConfigFactory.load()
+  val localhost: String = config.getString("serverHost")
+  val port: Int = config.getInt("serverPort")
 
   Http().newServerAt(localhost, port).bind(route)
     .map(_ => ServerLogger.logger.info(s"Server is bounded to $localhost:$port"))

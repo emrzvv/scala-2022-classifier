@@ -1,6 +1,7 @@
 package classifier.utils
 
 import classifier.entities.Term
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.lucene.analysis.ru.RussianAnalyzer
 import org.apache.lucene.analysis.tokenattributes.{CharTermAttribute, OffsetAttribute}
 
@@ -9,10 +10,11 @@ import scala.collection.mutable.ArrayBuffer
 
 
 object Utils {
-  val negativeCsvPath: String = Paths.get(".").toAbsolutePath.toString + "/src/main/scala/classifier/data/negative.csv"
-  val positiveCsvPath: String = Paths.get(".").toAbsolutePath.toString + "/src/main/scala/classifier/data/positive.csv"
+  private val config: Config = ConfigFactory.load()
+  val probabilityLevel: Double = config.getDouble("probabilityLevel")
 
-  val probabilityLevel: Double = 0.7
+  val csvNegativePath: String = config.getString("csvNegativePath")
+  val csvPositivePath: String = config.getString("csvPositivePath")
 
   val startHighlighter: String = "<b>"
   val endHighlighter: String = "</b>"
