@@ -18,55 +18,34 @@ class RestAPI(bayesService: NaiveBayesService)(implicit ec: ExecutionContext) {
       HttpEntity(ContentTypes.`text/html(UTF-8)`, html.body)
     }
 
-  private def webJarAssets: Route = pathPrefix("webjars") {
-    webJars
-  }
-
-  def home: Route = {
-    path("") {
-      get {
-        complete(Html("<h1>Главная</h1><a href=\"/classify\">Классификатор</a>"))
+  private def classifyForm =
+    formFields("text") { text =>
+      onSuccess(bayesService.getTextClassWithHighlights(text)) { result =>
+        complete(form(Some(text),
+          Some(Html(s"[${result.classType.toString}] : ${result.highlightedText}")),
+          None))
       }
     }
-  }
-
-  def classifyFormData: Route = {
-    path("classify_type") {
-      post {
-        formFields("text") { text =>
-          onSuccess(bayesService.getTextClass(text)) { result =>
-            complete(form(Some(text), Some(Html(result.csvValue)), None))
-          }
-        }
-      }
-    }
-  }
-
-  def classifyFormDataWithHighlights: Route = {
-    pathPrefix("classify") {
-      pathEndOrSingleSlash {
-        concat(
-          get {
-            complete(form(None, None, None))
-          },
-          post {
-            formFields("text") { text =>
-              onSuccess(bayesService.getTextClassWithHighlights(text)) { result =>
-                complete(form(Some(text),
-                  Some(Html(s"[${result.classType.toString}] : ${result.highlightedText}")),
-                  None))
-              }
-            }
-          })
-      }
-    }
-  }
-
-  private def classifierRoutes: Route = {
-    classifyFormData ~ classifyFormDataWithHighlights
-  }
 
   def routes: Route = {
-    webJarAssets ~ home ~ classifierRoutes
+    pathPrefix("webjars") {
+      webJars
+    } ~
+      pathSingleSlash {
+        get {
+          complete(Html("<h1>Главная</h1><a href=\"/classify\">Классификатор</a>"))
+        }
+      } ~
+      pathPrefix("classify") {
+        pathEndOrSingleSlash {
+          concat(
+            get {
+              complete(form(None, None, None))
+            },
+            post {
+              classifyForm
+            })
+        }
+      }
   }
 }
