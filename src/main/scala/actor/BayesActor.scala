@@ -26,11 +26,7 @@ class BayesActor extends Actor {
 
     case GetTextClassWithHighlights(text) =>
       ServerLogger.logger.info(s"Input text [$text] is classified: ${classifier.pickBestClassWithProbability(text)}")
-      sender() ! (classifier.pickBestClassWithHighlights(text) match {
-        case (classType, resultText) if classType == csvNegative => (readableNegative, resultText)
-        case (classType, resultText) if classType == csvNeutral => (readableNeutral, resultText)
-        case (classType, resultText) if classType == csvPositive => (readablePositive, resultText)
-      })
+      sender() ! classifier.pickBestClassWithHighlights(text)
   }
 }
 

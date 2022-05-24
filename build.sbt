@@ -22,6 +22,7 @@ libraryDependencies ++= Seq(
   "org.apache.lucene" % "lucene-analyzers-common" % "8.11.1",
   "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
   "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test,
+  "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
   "com.typesafe.akka" %% "akka-actor" % AkkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test,
   "org.scalatest" %% "scalatest" % "3.2.12" % Test,

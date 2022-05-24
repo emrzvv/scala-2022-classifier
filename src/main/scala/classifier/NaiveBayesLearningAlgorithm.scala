@@ -1,8 +1,9 @@
 package classifier
 
 import classifier.entities.TextEntity
+import classifier.utils.ClassTypes.ClassType
 import com.github.tototoshi.csv.{CSVReader, DefaultCSVFormat}
-import utils.Utils
+import utils.{ClassTypes, Utils}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -14,7 +15,7 @@ class NaiveBayesLearningAlgorithm() {
   def addExample(example: TextEntity): Unit =
     examples.addOne(example)
 
-  def addExample(classType: String, text: String): Unit =
+  def addExample(classType: ClassType, text: String): Unit =
     examples.addOne(entities.TextEntity(classType, Utils.luceneTokenize(text)))
 
   def addAllExamples(textsEntities: List[TextEntity]): Unit =
@@ -50,6 +51,10 @@ class NaiveBayesLearningAlgorithm() {
 
     val reader = CSVReader.open(path)
 
-    addAllExamples(reader.all().map(col => entities.TextEntity(col(4), Utils.luceneTokenize(col(3)))))
+    addAllExamples(reader.all().map(col => entities.TextEntity(col(4) match {
+      case "-1" => ClassTypes.Negative
+      case "1" => ClassTypes.Positive
+      case "0" => ClassTypes.Neutral
+    }, Utils.luceneTokenize(col(3)))))
   }
 }
