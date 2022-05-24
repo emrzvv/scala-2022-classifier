@@ -29,7 +29,7 @@ object Utils {
   private def cleanGarbageNaive(s: String): String =
     s.split("\\s+").filterNot(word => word.startsWith("@") || word.startsWith("http")).mkString(" ")
 
-  def luceneTokenize(s: String): ArrayBuffer[Term] = {
+  def luceneTokenize(s: String): Vector[Term] = {
     val analyzer = new RussianAnalyzer()
     val ts = analyzer.tokenStream("text", cleanGarbageNaive(s))
     ts.reset()
@@ -41,6 +41,8 @@ object Utils {
       val offsets = ts.getAttribute(classOf[OffsetAttribute])
       out.addOne(Term(word, offsets.startOffset(), offsets.endOffset()))
     }
-    out
+    ts.end()
+    ts.close()
+    out.toVector
   }
 }

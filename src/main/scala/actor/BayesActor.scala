@@ -11,8 +11,8 @@ import logger.ServerLogger
 class BayesActor extends Actor {
   val algorithm: NaiveBayesLearningAlgorithm = new NaiveBayesLearningAlgorithm
 
-  algorithm.addExamplesFromCsv(Utils.negativeCsvPath)
-  algorithm.addExamplesFromCsv(Utils.positiveCsvPath)
+//  algorithm.addExamplesFromCsv(Utils.negativeCsvPath)
+//  algorithm.addExamplesFromCsv(Utils.positiveCsvPath)
 
   val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(algorithm.getModel)
   ServerLogger.logger.info("[MODEL IS READY]")

@@ -10,7 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 class NaiveBayesStatistics(model: NaiveBayesModel) {
   case class TermCounter(term: Term, amount: Int)
 
-  private def analyzedText(tokenizedText: ArrayBuffer[Term], classType: ClassType): ArrayBuffer[TermCounter] = {
+  private def analyzedText(tokenizedText: Vector[Term], classType: ClassType): Vector[TermCounter] = {
     tokenizedText
       .map(term => TermCounter(term, model.wordCount(classType).getOrElse(term.word, 0)))
       .sortWith((left, right) => left.amount > right.amount).take(toHighlightAmount) // sort by frequency
@@ -18,7 +18,7 @@ class NaiveBayesStatistics(model: NaiveBayesModel) {
   }
 
   def getHighlightedText(classType: ClassType, text: String): String = {
-    val tokenizedText: ArrayBuffer[Term] = luceneTokenize(text)
+    val tokenizedText: Vector[Term] = luceneTokenize(text)
     val highlightsAmount = math.min(toHighlightAmount, tokenizedText.length)
     val analyzed = analyzedText(tokenizedText, classType)
     val highlighterLengthSum = startHighlighter.length + endHighlighter.length
