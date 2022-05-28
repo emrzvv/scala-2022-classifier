@@ -16,7 +16,7 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
   /**
    * сервис, предоставляющий выделение статистики для пользователя: подсветка маркерных слов в тексте
    */
-  lazy val statistics: NaiveBayesStatisticsService = NaiveBayesStatisticsService(model)
+  lazy val statistics: NaiveBayesStatistics = NaiveBayesStatistics(model)
 
   /**
    * рассчёт вероятности документа в пределах класса
@@ -55,6 +55,7 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
         (classType, 1.0 / (1.0 + (classified - classType).map({
           case (_, value) => exp(value - classified(classType))
         }).sum))).toMap
+  }
 
   /**
    * выбор текста с лучшей вероятностью
@@ -64,7 +65,7 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
    */
   def pickBestClassWithProbability(text: String): ClassificationResult = {
     ClassificationResult tupled classifyNormal(text).toList.maxBy(_._2)
-
+  }
   /**
    * выбор текста с лучшей вероятностью
    *

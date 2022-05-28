@@ -10,6 +10,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.pattern.ask
 import akka.util
 import akka.util.Timeout
+import classifier.entities.ClassificationWithStatisticsResult
 import classifier.utils.ClassTypes
 import spray.json.DefaultJsonProtocol._
 import telegram_bot.actor.BotActor.Data.BufferedUpdates
@@ -77,15 +78,16 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
       val results = bufferedUpdates.buffer.map(update => update.message match {
         case Some(message) => message.text match {
           case Some(messageText) =>
-            val classifyResult = (bayesActor ? GetTextClassWithHighlights(messageText)).mapTo[(String, String)]
+            val classifyResult =
+              (bayesActor ? GetTextClassWithHighlights(messageText)).mapTo[ClassificationWithStatisticsResult]
 
             classifyResult.onComplete {
-              case Success((classType, highlightedText)) =>
-                if (classType == ClassTypes.readableNeutral) {
+              case Success(result) =>
+                if (result.classType == ClassTypes.Neutral) {
                   log.info(s"Встречен нейтральный текст: $messageText")
                 } else {
                   val query = Query("chat_id" -> message.chat.get.id.toString,
-                    "text" -> s"[${classType.toUpperCase}]: $highlightedText",
+                    "text" -> s"[${result.classType.toString.toUpperCase}]: ${result.highlightedText}",
                     "parse_mode" -> "HTML",
                     "reply_to_message_id" -> message.message_id.getOrElse("").toString)
                   makeRequest("sendMessage", Some(query), Some(s"Отправлено сообщение в чат ${message.chat.get.id}"))

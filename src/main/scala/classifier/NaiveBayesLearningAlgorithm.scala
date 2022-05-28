@@ -30,14 +30,14 @@ class NaiveBayesLearningAlgorithm() {
     /**
      * группируем тексты по классу
      */
-    val docsByClass: Map[String, ArrayBuffer[ArrayBuffer[Term]]] = examples
+    val docsByClass: Map[ClassType, ArrayBuffer[Vector[Term]]] = examples
       .groupBy(_.classType)
       .map({ case (key, arrayValue) => (key, arrayValue.map(_.tokenizedText)) })
 
     /**
      * группируем слова по классу
      */
-    val classToWords: Map[String, ArrayBuffer[Term]] = docsByClass
+    val classToWords: Map[ClassType, ArrayBuffer[Term]] = docsByClass
       .map({ case (key, arrayValue) => (key, arrayValue.flatten) })
 
     /**
@@ -48,13 +48,13 @@ class NaiveBayesLearningAlgorithm() {
     /**
      * ставим в соответствие каждому классу количество документов в нём
      */
-    val docCount: Map[String, Int] = docsByClass.map({ case (key, arrayValue) => (key, arrayValue.length) })
+    val docCount: Map[ClassType, Int] = docsByClass.map({ case (key, arrayValue) => (key, arrayValue.length) })
 
     /**
      * ставим в соответствие каждому классу статистику:
      * слово -> количество слов в текстах данного класса
      */
-    val wordCount: Map[String, Map[String, Int]] = classToWords
+    val wordCount: Map[ClassType, Map[String, Int]] = classToWords
       .map({ case (key, words) => (key, words.groupMapReduce(w => w.word)(_ => 1)(_ + _)) })
 
     new NaiveBayesModel(docLengths, docCount, wordCount, dictionary().size)
