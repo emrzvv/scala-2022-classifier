@@ -5,7 +5,7 @@ import telegram_bot.Bot
 
 object Main extends App {
   implicit val system: ActorSystem = ActorSystem("main-system")
-  val bayesActor: ActorRef = system.actorOf(Props[BayesActor], "bayes-actor")
+  val bayesActor: ActorRef = system.actorOf(Props[BayesActor](), "bayes-actor")
 
   if (args.length == 0) {
     println("oops, no bot token")

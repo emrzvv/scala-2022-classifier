@@ -87,8 +87,7 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
                   val query = Query("chat_id" -> message.chat.get.id.toString,
                     "text" -> s"[${classType.toUpperCase}]: $highlightedText",
                     "parse_mode" -> "HTML",
-                    "reply_to_message_id" -> Some(message.message_id).getOrElse("").toString)
-
+                    "reply_to_message_id" -> message.message_id.getOrElse("").toString)
                   makeRequest("sendMessage", Some(query), Some(s"Отправлено сообщение в чат ${message.chat.get.id}"))
                 }
               case _ =>
