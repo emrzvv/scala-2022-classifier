@@ -1,11 +1,25 @@
 package classifier.utils
 
 object ClassTypes {
-  val csvNegative: String = "-1"
-  val csvPositive: String = "1"
-  val csvNeutral: String = "0"
+  sealed trait ClassType {
+    val csvValue: String
+  }
 
-  val readableNegative: String = "негативный"
-  val readablePositive: String = "позитивный"
-  val readableNeutral: String = "нейтральный"
+  case object Negative extends ClassType {
+    override val csvValue: String = "-1"
+
+    override def toString: String = "негативный"
+  }
+
+  case object Positive extends ClassType {
+    override val csvValue: String = "1"
+
+    override def toString: String = "позитивный"
+  }
+
+  case object Neutral extends ClassType {
+    override val csvValue: String = "0"
+
+    override def toString: String = "нейтральный"
+  }
 }

@@ -9,7 +9,12 @@ lazy val root = (project in file("."))
 
 val AkkaVersion = "2.6.19"
 val AkkaHttpVersion = "10.2.9"
-val circeVersion = "0.14.1"
+
+ThisBuild / scalacOptions ++= Seq(
+  "-encoding", "utf8",
+  "-Xfatal-warnings",
+  "-deprecation"
+)
 
 libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "scala-csv" % "1.3.10",
@@ -19,8 +24,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test,
   "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
   "com.typesafe.akka" %% "akka-actor" % AkkaVersion,
-  "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
-  "com.typesafe.akka" %% "akka-persistence" % AkkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test,
   "org.scalatest" %% "scalatest" % "3.2.12" % Test,
   "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",

@@ -1,6 +1,7 @@
 package classifier.utils
 
 import classifier.entities.Term
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.lucene.analysis.ru.RussianAnalyzer
 import org.apache.lucene.analysis.tokenattributes.{CharTermAttribute, OffsetAttribute}
 
@@ -11,11 +12,11 @@ import scala.collection.mutable.ArrayBuffer
  * вспомогательные утилиты
  */
 object Utils {
-  val dataFolder: String = "/src/main/scala/classifier/data"
-  val negativeCsvPath: String = Paths.get(".").toAbsolutePath.toString + dataFolder + "/negative.csv"
-  val positiveCsvPath: String = Paths.get(".").toAbsolutePath.toString + dataFolder + "/positive.csv"
+  private val config: Config = ConfigFactory.load()
+  val probabilityLevel: Double = config.getDouble("probabilityLevel")
 
-  val probabilityLevel: Double = 0.7
+  val csvNegativePath: String = config.getString("csvNegativePath")
+  val csvPositivePath: String = config.getString("csvPositivePath")
 
   val startHighlighter: String = "<b>"
   val endHighlighter: String = "</b>"
@@ -44,7 +45,7 @@ object Utils {
    * @param s - текст
    * @return токенизированный текст
    */
-  def luceneTokenize(s: String): ArrayBuffer[Term] = {
+  def luceneTokenize(s: String): Vector[Term] = {
     val analyzer = new RussianAnalyzer()
     val ts = analyzer.tokenStream("text", cleanGarbageNaive(s))
     ts.reset()
@@ -59,6 +60,8 @@ object Utils {
       val offsets = ts.getAttribute(classOf[OffsetAttribute])
       if (!toExclude.contains(word)) out.addOne(Term(word, offsets.startOffset(), offsets.endOffset()))
     }
-    out
+    ts.end()
+    ts.close()
+    out.toVector
   }
 }

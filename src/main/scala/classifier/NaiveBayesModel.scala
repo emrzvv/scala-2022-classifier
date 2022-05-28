@@ -1,5 +1,7 @@
 package classifier
 
+import classifier.utils.ClassTypes.ClassType
+
 import scala.math.log
 
 /**
@@ -14,27 +16,27 @@ import scala.math.log
  * @param wordCount      соответствие класса к суммарному количеству слов, которые входят в документы данного класса
  * @param dictionarySize количество слов
  */
-class NaiveBayesModel(val docLengths: Map[String, Int],
-                      val docCount: Map[String, Int],
-                      val wordCount: Map[String, Map[String, Int]],
+class NaiveBayesModel(val docLengths: Map[ClassType, Int],
+                      val docCount: Map[ClassType, Int],
+                      val wordCount: Map[ClassType, Map[String, Int]],
                       val dictionarySize: Int) {
 
-  val classes: Set[String] = docCount.keySet
+  val classes: Set[ClassType] = docCount.keySet
 
   /**
-   * @param classType класс
+   * @param c класс
    * @return логарифм априорной вероятности класса P(c)
    */
-  def classLogProbability(classType: String): Double = {
-    log(docCount(classType).toDouble / docCount.values.sum)
+  def classLogProbability(c: ClassType): Double = {
+    log(docCount(c).toDouble / docCount.values.sum)
   }
 
   /**
-   * @param classType класс
-   * @param word      слово
+   * @param c класс
+   * @param w слово
    * @return логарифм вероятности слова в пределах класса P(w|c)
    */
-  def wordLogProbability(classType: String, word: String): Double = {
-    log((wordCount(classType).getOrElse(word, 0) + 1.0) / (dictionarySize + docLengths(classType).toDouble))
+  def wordLogProbability(c: ClassType, w: String): Double = {
+    log((wordCount(c).getOrElse(w, 0) + 1.0) / (dictionarySize + docLengths(c).toDouble))
   }
 }

@@ -1,5 +1,8 @@
 package classifier
 
+import classifier.entities.{ClassificationResult, ClassificationWithStatisticsResult}
+import classifier.utils.ClassTypes.{ClassType, Neutral}
+
 import math.exp
 import utils.{ClassTypes, Utils}
 
@@ -22,7 +25,7 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
    * @param text      текст документа
    * @return оценка P(c|d)
    */
-  def calculateProbability(classType: String, text: String): Double = {
+  def calculateProbability(classType: ClassType, text: String): Double = {
     Utils.luceneTokenize(text)
       .map(_.word)
       .map(model.wordLogProbability(classType, _)).sum + model.classLogProbability(classType)
@@ -34,7 +37,7 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
    * @param text текст
    * @return отображение класс -> логарифмическая вероятность
    */
-  def classifyLog(text: String): Map[String, Double] = {
+  def classifyLog(text: String): Map[ClassType, Double] = {
     model.classes.map(classType => (classType, calculateProbability(classType, text))).toMap
   }
 
@@ -45,13 +48,13 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
    * @param text текст
    * @return отображение класс -> вероятность
    */
-  def classifyNormal(text: String): Map[String, Double] = {
-    val classified: Map[String, Double] = classifyLog(text)
-    model.classes.view.map(classType =>
-      (classType, 1.0 / (1.0 + (classified - classType).map({
-        case (_, value) => exp(value - classified(classType))
-      }).sum))).toMap
-  }
+  def classifyNormal(text: String): Map[ClassType, Double] = {
+    val classified: Map[ClassType, Double] = classifyLog(text)
+    model.classes
+      .map(classType =>
+        (classType, 1.0 / (1.0 + (classified - classType).map({
+          case (_, value) => exp(value - classified(classType))
+        }).sum))).toMap
 
   /**
    * выбор текста с лучшей вероятностью
@@ -59,9 +62,8 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
    * @param text текст
    * @return класс и лучшая вероятность
    */
-  def pickBestClassWithProbability(text: String): (String, Double) = {
-    classifyNormal(text).toList.maxBy(_._2)
-  }
+  def pickBestClassWithProbability(text: String): ClassificationResult = {
+    ClassificationResult tupled classifyNormal(text).toList.maxBy(_._2)
 
   /**
    * выбор текста с лучшей вероятностью
@@ -69,9 +71,9 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
    * @param text текст
    * @return класс, которому соответствует лучшая вероятность
    */
-  def pickBestClass(text: String): String = {
-    val result: (String, Double) = pickBestClassWithProbability(text)
-    if (result._2 < Utils.probabilityLevel) ClassTypes.csvNeutral else result._1
+  def pickBestClass(text: String): ClassType = {
+    val result: ClassificationResult = pickBestClassWithProbability(text)
+    if (result.probability < Utils.probabilityLevel) ClassTypes.Neutral else result.classType
   }
 
   /**
@@ -81,12 +83,12 @@ class NaiveBayesClassifier(model: NaiveBayesModel) {
    * @param text текст
    * @return класс и размеченный текст
    */
-  def pickBestClassWithHighlights(text: String): (String, String) = {
-    val classType: String = pickBestClass(text)
-    if (classType == ClassTypes.csvNeutral) {
-      (classType, text)
+  def pickBestClassWithHighlights(text: String): ClassificationWithStatisticsResult = {
+    val classType: ClassType = pickBestClass(text)
+    if (classType == Neutral) {
+      ClassificationWithStatisticsResult(classType, text)
     } else {
-      (classType, statistics.getHighlightedText(classType, text))
+      ClassificationWithStatisticsResult(classType, statistics.getHighlightedText(classType, text))
     }
   }
 }
