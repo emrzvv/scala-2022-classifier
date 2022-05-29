@@ -55,15 +55,39 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
 
   log.info("Bot actor is ready")
 
-  def makeRequest(methodName: String, query: Option[Query], logMessage: Option[String]): Future[HttpResponse] = {
+  private def makeRequest(methodName: String, query: Option[Query], logMessage: Option[String]): Future[HttpResponse] = {
     log.info(logMessage.getOrElse(s"Making request $methodName with params ${query.toString}"))
     val url = Uri(s"$defaultUrl$token/$methodName").withQuery(query.getOrElse(Query.Empty))
 
     http.singleRequest(HttpRequest(uri = url))
   }
 
-  def updateData(buffer: Array[Update], lastUpdateId: Long): BufferedUpdates = {
+  private def updateData(buffer: Array[Update], lastUpdateId: Long): BufferedUpdates = {
     BufferedUpdates(buffer, lastUpdateId)
+  }
+
+  private def processClassificationResult(message: Message): Unit = {
+    message.text match {
+      case Some(messageText) =>
+        val classifyResult =
+          (bayesActor ? GetTextClassWithHighlights(messageText)).mapTo[ClassificationWithStatisticsResult]
+        classifyResult.onComplete {
+          case Success(result) =>
+            if (result.classType == ClassTypes.Neutral) {
+              log.info(s"Встречен нейтральный текст: $messageText")
+            } else {
+              val query = Query("chat_id" -> message.chat.get.id.toString,
+                "text" -> s"[${result.classType.toString.toUpperCase}]\n ${result.highlightedText}",
+                "parse_mode" -> "HTML",
+                "reply_to_message_id" -> message.message_id.getOrElse("").toString)
+              makeRequest("sendMessage", Some(query), Some(s"Отправлено сообщение в чат ${message.chat.get.id}"))
+            }
+          case _ =>
+            log.warning("ошибка со стороны BayesActor")
+        }
+      case None =>
+        log.info("Встречено нетекстовое сообщение")
+    }
   }
 
   startWith(Idle, BufferedUpdates(Array.empty, 0))
@@ -76,31 +100,9 @@ class BotActor(token: String, http: HttpExt, bayesActor: ActorRef) extends FSM[B
 
     case Event(SendMessage(bufferedUpdates), _) => {
       val results = bufferedUpdates.buffer.map(update => update.message match {
-        case Some(message) => message.text match {
-          case Some(messageText) =>
-            val classifyResult =
-              (bayesActor ? GetTextClassWithHighlights(messageText)).mapTo[ClassificationWithStatisticsResult]
-
-            classifyResult.onComplete {
-              case Success(result) =>
-                if (result.classType == ClassTypes.Neutral) {
-                  log.info(s"Встречен нейтральный текст: $messageText")
-                } else {
-                  val query = Query("chat_id" -> message.chat.get.id.toString,
-                    "text" -> s"[${result.classType.toString.toUpperCase}]: ${result.highlightedText}",
-                    "parse_mode" -> "HTML",
-                    "reply_to_message_id" -> message.message_id.getOrElse("").toString)
-                  makeRequest("sendMessage", Some(query), Some(s"Отправлено сообщение в чат ${message.chat.get.id}"))
-                }
-              case _ =>
-                log.warning("ошибка со стороны BayesActor")
-            }
-          case None =>
-            log.info("Встречено нетекстовое сообщение")
-        }
+        case Some(message) => processClassificationResult(message)
         case None => log.info("В полученном апдейте нет сообщения")
       })
-
       goto(MakingRequest) using BufferedUpdates(Array.empty[Update], bufferedUpdates.lastUpdateId)
     }
 
