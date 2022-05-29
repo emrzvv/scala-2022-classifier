@@ -7,9 +7,21 @@ import classifier.utils.Utils._
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
+/**
+ * класс, отвечающий за предоставление статистики по классифицируемому тексту
+ *
+ * @param model обученная модель
+ */
 class NaiveBayesStatistics(model: NaiveBayesModel) {
   case class TermCounter(term: Term, amount: Int)
 
+  /**
+   * метод для анализа токенизированного текста: выбираем n самых часто встречающихся слов из определённого класса
+   *
+   * @param tokenizedText токенизированный текст
+   * @param classType     класс текста
+   * @return
+   */
   private def analyzedText(tokenizedText: Vector[Term], classType: ClassType): Vector[TermCounter] = {
     tokenizedText
       .map(term => TermCounter(term, model.wordCount(classType).getOrElse(term.word, 0)))
@@ -17,6 +29,13 @@ class NaiveBayesStatistics(model: NaiveBayesModel) {
       .sortWith((left, right) => left.term.start < right.term.start) // sort by term beginning
   }
 
+  /**
+   * метод для получения промаркированного текста
+   *
+   * @param classType класс текста
+   * @param text      текст
+   * @return
+   */
   def getHighlightedText(classType: ClassType, text: String): String = {
     val tokenizedText: Vector[Term] = luceneTokenize(text)
     val highlightsAmount = math.min(toHighlightAmount, tokenizedText.length)
