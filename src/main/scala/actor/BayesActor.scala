@@ -1,23 +1,24 @@
 package actor
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging}
 import classifier.{NaiveBayesClassifier, NaiveBayesLearningAlgorithm}
 import BayesActor._
 import classifier.utils.Utils
 import com.typesafe.config.{Config, ConfigFactory}
 import logger.ServerLogger
-
 import scala.io.Source
 
-
-class BayesActor extends Actor {
+/**
+ * класс актора, отвечающий за классифицкацию текстов
+ */
+class BayesActor extends Actor with ActorLogging {
   val algorithm: NaiveBayesLearningAlgorithm = new NaiveBayesLearningAlgorithm
 
   algorithm.addExamplesFromCsv(Source.fromResource(Utils.csvNegativePath))
   algorithm.addExamplesFromCsv(Source.fromResource(Utils.csvPositivePath))
 
   val classifier: NaiveBayesClassifier = new NaiveBayesClassifier(algorithm.getModel)
-  ServerLogger.logger.info("[MODEL IS READY]")
+  log.info("Bayes Actor and model is ready")
 
   override def receive: Receive = {
     case GetTextClass(text) =>
@@ -27,7 +28,7 @@ class BayesActor extends Actor {
       sender() ! classifier.pickBestClassWithProbability(text)
 
     case GetTextClassWithHighlights(text) =>
-      ServerLogger.logger.info(s"Input text [$text] is classified: ${classifier.pickBestClassWithProbability(text)}")
+      log.info(s"Input text [$text] is classified: ${classifier.pickBestClassWithProbability(text)}")
       sender() ! classifier.pickBestClassWithHighlights(text)
   }
 }

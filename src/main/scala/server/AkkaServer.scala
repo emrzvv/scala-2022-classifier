@@ -13,10 +13,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.StdIn
 import scala.util.{Failure, Success}
 
-class AkkaServer {
-  implicit val system: ActorSystem = ActorSystem("my-system")
-
-  val bayesActor: ActorRef = system.actorOf(Props[BayesActor]())
+/**
+ * akka http сервер. настройки в объекте Config
+ *
+ * @param bayesActor актор, отвечающий за обучение модели и классификацию
+ * @param system     актор-система
+ */
+class AkkaServer(bayesActor: ActorRef)(implicit val system: ActorSystem) {
   val bayesService = new NaiveBayesService(bayesActor)
   val restApi = new RestAPI(bayesService)
   val route: Route = restApi.routes
@@ -26,19 +29,19 @@ class AkkaServer {
   val port: Int = config.getInt("serverPort")
 
   Http().newServerAt(localhost, port).bind(route)
-    .map(_ => ServerLogger.logger.info(s"Server is bounded to $localhost:$port"))
+    .map(_ => ServerLogger.serverLogger.info(s"Server is bounded to $localhost:$port"))
     .onComplete {
       case Failure(exception) =>
-        ServerLogger.logger.error(s"Unexpected error while binding server: ${exception.getMessage}")
+        ServerLogger.serverLogger.error(s"Unexpected error while binding server: ${exception.getMessage}")
         system.terminate()
       case Success(_) => ()
     }
 
   StdIn.readLine("Press ENTER to stop\n")
   system.terminate()
-  ServerLogger.logger.info("Server is shut down")
+  ServerLogger.serverLogger.info("Server is shut down")
 }
 
 object AkkaServer {
-  def apply() = new AkkaServer
+  def apply(bayesActor: ActorRef)(implicit actorSystem: ActorSystem) = new AkkaServer(bayesActor)
 }

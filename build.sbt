@@ -30,7 +30,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.11",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
   "org.webjars.npm" % "bootstrap" % "5.1.3",
-  "org.mdedetrich" %% "akka-http-webjars" % "0.5.0"
+  "org.mdedetrich" %% "akka-http-webjars" % "0.5.0",
+  "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion
 )
 
 enablePlugins(SbtTwirl)

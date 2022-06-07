@@ -3,5 +3,6 @@ package logger
 import com.typesafe.scalalogging.Logger
 
 object ServerLogger {
-  val logger: Logger = Logger("server-classifier-logger")
+  val serverLogger: Logger = Logger("server-classifier-logger")
+  val botLogger: Logger = Logger("telegram-bot-logger")
 }
